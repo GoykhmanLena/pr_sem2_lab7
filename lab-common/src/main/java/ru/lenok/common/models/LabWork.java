@@ -3,6 +3,7 @@ package ru.lenok.common.models;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -72,6 +73,19 @@ public class LabWork implements Comparable<LabWork>, Serializable {
 
         public Builder setName(String name) {
             this.name = name;
+            return this;
+        }
+
+        public Builder setCreationDate(LocalDateTime creationDate){
+            this.creationDate = creationDate;
+            return this;
+        }
+        public Builder setCreationDate(Timestamp creationDate){
+            this.creationDate = creationDate.toLocalDateTime();
+            return this;
+        }
+        public Builder setId(Long id){
+            this.id = id;
             return this;
         }
 

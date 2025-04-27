@@ -6,7 +6,7 @@ import ru.lenok.common.CommandResponse;
 import java.io.IOException;
 
 public interface Executable {
-    CommandResponse execute(CommandRequest req)throws IOException;
+    CommandResponse execute(CommandRequest req)throws IOException, Exception;
 
     String getDescription();
 }

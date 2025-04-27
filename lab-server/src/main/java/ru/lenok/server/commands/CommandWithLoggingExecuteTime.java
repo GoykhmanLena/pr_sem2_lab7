@@ -15,7 +15,7 @@ public class CommandWithLoggingExecuteTime implements Executable {
     }
 
     @Override
-    public CommandResponse execute(CommandRequest req) throws IOException {
+    public CommandResponse execute(CommandRequest req) throws Exception {
         long start = System.nanoTime();
         try {
             return delegate.execute(req);

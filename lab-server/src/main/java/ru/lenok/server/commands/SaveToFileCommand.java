@@ -21,9 +21,9 @@ public class SaveToFileCommand extends AbstractCommand {
 
     private CommandResponse execute() throws IOException {
         String json = labWorkService.getCollectionAsJson();
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(labWorkService.getFileName()))) {
-            writer.write(json);
-        }
+ //TODO       try (BufferedWriter writer = new BufferedWriter(new FileWriter(labWorkService.getFileName()))) {
+ //           writer.write(json);
+ //       }
         return new CommandResponse(EMPTY_RESULT);
     }
 

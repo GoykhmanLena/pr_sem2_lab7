@@ -18,25 +18,27 @@ import ru.lenok.server.utils.JsonReader;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Properties;
 
 import static java.lang.Math.max;
 import static ru.lenok.server.commands.CommandName.save;
 
 public class ServerApplication implements IHistoryProvider {
     private static final Logger logger = LoggerFactory.getLogger(ServerApplication.class);
-    private final String filename;
+    private String filename;
     private LabWorkService labWorkService;
     private CommandRegistry commandRegistry;
     private RequestHandler requestHandler;
-    private final int port;
+    private int port;
+    private final Properties properties;
     private ServerConnectionListener serverConnectionListener;
     private ServerResponseSender serverResponseSender;
 
-    public ServerApplication(String file, int port) {
-        this.filename = file;
-        this.port = port;
+    public ServerApplication(Properties properties) {
+        this.properties = properties;
         init();
     }
 
@@ -54,6 +56,13 @@ public class ServerApplication implements IHistoryProvider {
     }
 
     private void init() {
+        try {
+            port = Integer.parseInt(properties.getProperty("listenPort"));
+        } catch (NumberFormatException e) {
+            logger.error("Ошибка, не распознан порт: ", e);
+            System.exit(1);
+        }
+        filename = properties.getProperty("initialCollectionPath");
         try {
             initStorage();
             this.commandRegistry = new CommandRegistry(labWorkService, this);
@@ -103,7 +112,18 @@ public class ServerApplication implements IHistoryProvider {
             map.clear();
             IdCounterService.setId(0);
         }
-        labWorkService = new LabWorkService(map, filename);
+        String dbPort = properties.getProperty("dbPort");
+        String dbUser = properties.getProperty("dbUser");
+        String dbPassword = properties.getProperty("dbPassword");
+        String dbHost = properties.getProperty("dbHost");
+
+        try {
+            labWorkService = new LabWorkService(map, dbHost, dbPort, dbUser, dbPassword);
+        } catch (SQLException e) {
+            logger.error("Ошибка при инициализации LabWorkService: {}", e.getMessage());
+            logger.error("Программа завершается");
+            System.exit(1);
+        }
     }
 
     @Override

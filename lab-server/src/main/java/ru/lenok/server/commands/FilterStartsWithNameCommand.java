@@ -22,7 +22,7 @@ public class FilterStartsWithNameCommand extends AbstractCommand {
     }
 
     private CommandResponse execute(String arg) {
-        Map<String, LabWork> filteredMap = labWorkService.filterWithDescription(arg);
+        Map<String, LabWork> filteredMap = labWorkService.filterWithName(arg);
         return new CommandResponse(sortMapAndStringify(filteredMap));
     }
 

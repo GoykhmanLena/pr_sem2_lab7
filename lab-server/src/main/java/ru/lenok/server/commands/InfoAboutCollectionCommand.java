@@ -7,6 +7,7 @@ import ru.lenok.common.models.LabWork;
 import ru.lenok.server.collection.LabWorkService;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static ru.lenok.server.commands.CommandName.info;
 
@@ -18,12 +19,12 @@ public class InfoAboutCollectionCommand extends AbstractCommand {
         this.labWorkService = labWorkService;
     }
 
-    private CommandResponse execute() {
+    private CommandResponse execute() throws SQLException {
         return new CommandResponse("Это LabWorkCollection, текущий размер: " + labWorkService.getCollectionSize() + ", состоит из элементов типа: " + LabWork.class + "\n");
     }
 
     @Override
-    public CommandResponse execute(CommandRequest req) throws IOException {
+    public CommandResponse execute(CommandRequest req) throws Exception {
         return execute();
     }
 }
