@@ -1,0 +1,146 @@
+{
+  "bnm": {
+    "id": 29,
+    "name": "io",
+    "coordinates": {
+      "x": 89.0,
+      "y": 987.0
+    },
+    "creationDate": "2025-04-18T11:12:55.7065203",
+    "minimalPoint": 87.0,
+    "description": "vhj",
+    "difficulty": "NORMAL",
+    "discipline": {
+      "name": "vghhj",
+      "practiceHours": 876
+    }
+  },
+  "check_saving": {
+    "id": 23,
+    "name": "njkjop",
+    "coordinates": {
+      "x": 98.4,
+      "y": 90.1
+    },
+    "creationDate": "2025-04-13T12:08:45.9057606",
+    "minimalPoint": 90.0,
+    "description": "raaaaaaaaa",
+    "difficulty": "NORMAL",
+    "discipline": {
+      "name": "njiokne",
+      "practiceHours": 234
+    }
+  },
+  "bubuka": {
+    "id": 22,
+    "name": "buuuuuu",
+    "coordinates": {
+      "x": 56.8,
+      "y": 67.0
+    },
+    "creationDate": "2025-04-13T12:08:45.8321244",
+    "minimalPoint": 87.0,
+    "description": "kjhvc",
+    "difficulty": "VERY_EASY",
+    "discipline": {
+      "name": "kjjbhhgv",
+      "practiceHours": 99
+    }
+  },
+  "gogogog": {
+    "id": 8,
+    "name": "bhjk",
+    "coordinates": {
+      "x": 678.0,
+      "y": 67.0
+    },
+    "creationDate": "2025-03-29T12:10:37.9544639",
+    "minimalPoint": 678.0,
+    "description": "cttoohbu",
+    "difficulty": "NORMAL",
+    "discipline": {
+      "name": "vbnhjk",
+      "practiceHours": 89
+    }
+  },
+  "vfghjk": {
+    "id": 7,
+    "name": "vhjk",
+    "coordinates": {
+      "x": 79.0,
+      "y": 5.0
+    },
+    "creationDate": "2025-03-29T12:09:39.6812286",
+    "minimalPoint": 6.0,
+    "description": "egfe",
+    "difficulty": "VERY_HARD",
+    "discipline": {
+      "name": "bgfr",
+      "practiceHours": 456
+    }
+  },
+  "AAAAAAAA": {
+    "id": 10,
+    "name": "fghjk",
+    "coordinates": {
+      "x": 789.0,
+      "y": 5678.0
+    },
+    "creationDate": "2025-04-06T15:10:04.5985935",
+    "minimalPoint": 5678.0,
+    "description": "fghjk",
+    "difficulty": "NORMAL",
+    "discipline": {
+      "name": "ghjk",
+      "practiceHours": 5678
+    }
+  },
+  "jnbbjb": {
+    "id": 6,
+    "name": "fgh",
+    "coordinates": {
+      "x": 876.0,
+      "y": 77777.0
+    },
+    "creationDate": "2025-04-13T14:39:39.108683",
+    "minimalPoint": 7777.0,
+    "description": "fghj",
+    "difficulty": "NORMAL",
+    "discipline": {
+      "name": "fgh",
+      "practiceHours": 9876543
+    }
+  },
+  "dfgh": {
+    "id": 20,
+    "name": "fghj",
+    "coordinates": {
+      "x": 678.0,
+      "y": 678.0
+    },
+    "creationDate": "2025-04-13T12:06:12.4045194",
+    "minimalPoint": 789.0,
+    "description": "ghj",
+    "difficulty": "NORMAL",
+    "discipline": {
+      "name": "vghj",
+      "practiceHours": 987
+    }
+  },
+  "vbhj": {
+    "id": 3,
+    "name": "bhjk",
+    "coordinates": {
+      "x": 678.0,
+      "y": 789.0
+    },
+    "creationDate": "2025-04-06T14:40:23.2583989",
+    "minimalPoint": 78.0,
+    "description": "fghj",
+    "difficulty": "NORMAL",
+    "discipline": {
+      "name": "vghj",
+      "practiceHours": 789
+    }
+  }
+}

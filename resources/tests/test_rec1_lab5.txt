@@ -1,0 +1,3 @@
+info
+execute_script C:\Users\lena\Desktop\test_recursion_lab5.txt
+show

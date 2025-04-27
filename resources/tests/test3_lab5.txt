@@ -1,0 +1,16 @@
+insert full_elem
+full
+98.9
+9.99
+8
+ojhhho
+NORMAL
+jjhgfd
+990
+insert not_full_elelm
+name
+8.5
+9.9
+7
+guijopkkhui
+NORMAL

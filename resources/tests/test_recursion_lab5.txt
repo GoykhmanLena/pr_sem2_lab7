@@ -1,0 +1,3 @@
+show
+execute_script C:\Users\lena\Desktop\test_rec1_lab5.txt
+help
