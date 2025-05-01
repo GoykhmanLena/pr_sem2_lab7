@@ -18,8 +18,9 @@ public class LabWork implements Comparable<LabWork>, Serializable {
     private String description; //Длина строки не должна быть больше 2863, Поле не может быть null
     private Difficulty difficulty; //Поле не может быть null
     private Discipline discipline; //Поле не может быть null
+    private Long ownerId;
 
-    public LabWork(String name, Coordinates coordinates, double minimalPoint, String description, Difficulty difficulty, Discipline discipline) {
+    public LabWork(Long id, String name, Coordinates coordinates, double minimalPoint, String description, Difficulty difficulty, Discipline discipline, LocalDateTime creationDate, Long ownerId) {
         this.name = name;
         this.coordinates = coordinates;
         this.minimalPoint = minimalPoint;
@@ -27,8 +28,9 @@ public class LabWork implements Comparable<LabWork>, Serializable {
         this.difficulty = difficulty;
         this.discipline = discipline;
 
-        this.creationDate = LocalDateTime.now();
-        this.id = 0L;
+        this.creationDate = creationDate;
+        this.id = id;
+        this.ownerId = ownerId;
     }
 
     public void setId(Long id) {
@@ -70,16 +72,13 @@ public class LabWork implements Comparable<LabWork>, Serializable {
         private String description; //Длина строки не должна быть больше 2863, Поле не может быть null
         private Difficulty difficulty; //Поле не может быть null
         private Discipline discipline; //Поле не может быть null
+        private Long ownerId;
 
         public Builder setName(String name) {
             this.name = name;
             return this;
         }
 
-        public Builder setCreationDate(LocalDateTime creationDate){
-            this.creationDate = creationDate;
-            return this;
-        }
         public Builder setCreationDate(Timestamp creationDate){
             this.creationDate = creationDate.toLocalDateTime();
             return this;
@@ -123,14 +122,22 @@ public class LabWork implements Comparable<LabWork>, Serializable {
             return this;
         }
 
+        public Builder setOwnerId(Long ownerId){
+            this.ownerId = ownerId;
+            return this;
+        }
+
         public LabWork build() {
             return new LabWork(
+                    id,
                     name,
                     coordinates,
                     minimalPoint,
                     description,
                     difficulty,
-                    discipline
+                    discipline,
+                    creationDate,
+                    ownerId
             );
         }
 
@@ -147,6 +154,11 @@ public class LabWork implements Comparable<LabWork>, Serializable {
                 this.coordinates = new Coordinates();
             }
             this.coordinates.setY(y);
+            return this;
+        }
+
+        public Builder setCreationDate(LocalDateTime creationDate) {
+            this.creationDate = creationDate;
             return this;
         }
     }

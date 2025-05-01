@@ -2,6 +2,7 @@ package ru.lenok.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import ru.lenok.common.auth.User;
 import ru.lenok.common.models.LabWork;
 
 import java.io.Serializable;
@@ -14,5 +15,5 @@ import java.util.UUID;
 public class CommandRequest implements Serializable {
     private CommandWithArgument commandWithArgument;
     private LabWork element;
-    private UUID clientID;
+    private User user;
 }

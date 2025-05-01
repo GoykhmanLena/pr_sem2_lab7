@@ -6,6 +6,7 @@ import ru.lenok.common.commands.AbstractCommand;
 import ru.lenok.server.collection.LabWorkService;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static ru.lenok.server.commands.CommandName.remove_key;
 
@@ -17,13 +18,15 @@ public class RemoveByKeyFromCollectionCommand extends AbstractCommand {
         this.labWorkService = labWorkService;
     }
 
-    private CommandResponse execute(String key) {
+    private CommandResponse execute(String key) throws SQLException {
         labWorkService.remove(key);
         return new CommandResponse(EMPTY_RESULT);
     }
 
     @Override
-    public CommandResponse execute(CommandRequest req) throws IOException {
-        return execute(req.getCommandWithArgument().getArgument());
+    public CommandResponse execute(CommandRequest req) throws IOException, SQLException {
+        String key = req.getCommandWithArgument().getArgument();
+        labWorkService.checkAccess(req.getUser().getId(), key);
+        return execute(key);
     }
 }

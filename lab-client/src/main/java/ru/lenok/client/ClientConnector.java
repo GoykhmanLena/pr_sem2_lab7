@@ -5,7 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.lenok.common.CommandRequest;
 import ru.lenok.common.CommandResponse;
+import ru.lenok.common.auth.LoginRequest;
+import ru.lenok.common.auth.LoginResponse;
 import ru.lenok.common.commands.CommandBehavior;
+import ru.lenok.common.auth.User;
 import ru.lenok.common.util.SerializationUtils;
 
 import java.io.IOException;
@@ -14,7 +17,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -151,12 +153,17 @@ public class ClientConnector {
         return sourceAddress;
     }
 
-    public Map<String, CommandBehavior> sendHello() {
-        Object commandDefinitions = sendData(CLIENT_ID);
-        if (commandDefinitions instanceof Map) {
-            return (Map<String, CommandBehavior>) commandDefinitions;
+    public Map<String, CommandBehavior> sendHello(boolean isRegister, User user) throws Exception {
+        LoginRequest loginRequest = new LoginRequest(user, isRegister);
+        Object response = sendData(loginRequest);
+        if (response instanceof LoginResponse) {
+            LoginResponse loginResponse = (LoginResponse) response;
+            if (loginResponse.getError() != null){
+                throw loginResponse.getError();
+            }
+            return loginResponse.getClientCommandDefinitions();
         }
-        throw new IllegalArgumentException("Неверный ответ от сервера на команду приветствия: " + commandDefinitions);
+        throw new IllegalArgumentException("Ошибка логина/регистрации: " + response);
     }
 
     public CommandResponse sendCommand(CommandRequest commandRequest) {

@@ -7,6 +7,7 @@ import ru.lenok.common.models.LabWork;
 import ru.lenok.server.collection.LabWorkService;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static ru.lenok.server.commands.CommandName.replace_if_greater;
 
@@ -19,13 +20,13 @@ public class ReplaceIfGreaterInCollectionCommand extends AbstractCommand {
         this.labWorkService = labWorkService;
     }
 
-    private CommandResponse execute(String key, LabWork element) {
+    private CommandResponse execute(String key, LabWork element) throws SQLException {
         labWorkService.replaceIfGreater(key, element);
         return new CommandResponse(EMPTY_RESULT);
     }
 
     @Override
-    public CommandResponse execute(CommandRequest req) throws IOException {
+    public CommandResponse execute(CommandRequest req) throws IOException, SQLException {
         return execute(req.getCommandWithArgument().getArgument(), req.getElement());
     }
 }

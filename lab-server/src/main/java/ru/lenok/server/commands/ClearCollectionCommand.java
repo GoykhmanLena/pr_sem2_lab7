@@ -4,11 +4,12 @@ import ru.lenok.common.CommandRequest;
 import ru.lenok.common.CommandResponse;
 import ru.lenok.common.commands.AbstractCommand;
 import ru.lenok.server.collection.LabWorkService;
-import ru.lenok.server.utils.IdCounterService;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static ru.lenok.server.commands.CommandName.clear;
+import static ru.lenok.server.commands.CommandName.show;
 
 
 public class ClearCollectionCommand extends AbstractCommand {
@@ -19,14 +20,13 @@ public class ClearCollectionCommand extends AbstractCommand {
         this.labWorkService = labWorkService;
     }
 
-    private CommandResponse execute() {
-        labWorkService.clear_collection();
-        IdCounterService.setId(0);
+    private CommandResponse execute(long ownerId) throws SQLException {
+        labWorkService.clearCollection(ownerId);
         return new CommandResponse(EMPTY_RESULT);
     }
 
     @Override
-    public CommandResponse execute(CommandRequest req) throws IOException {
-        return execute();
+    public CommandResponse execute(CommandRequest req) throws IOException, SQLException {
+        return execute(req.getUser().getId());
     }
 }

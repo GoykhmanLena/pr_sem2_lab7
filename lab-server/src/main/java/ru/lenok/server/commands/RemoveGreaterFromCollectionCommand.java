@@ -7,6 +7,7 @@ import ru.lenok.common.models.LabWork;
 import ru.lenok.server.collection.LabWorkService;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static ru.lenok.server.commands.CommandName.remove_greater;
 
@@ -18,13 +19,13 @@ public class RemoveGreaterFromCollectionCommand extends AbstractCommand {
         this.labWorkService = labWorkService;
     }
 
-    private CommandResponse execute(LabWork element) {
-        labWorkService.removeGreater(element);
+    private CommandResponse execute(LabWork element, long userId) throws SQLException {
+        labWorkService.removeGreater(element, userId);
         return new CommandResponse(EMPTY_RESULT);
     }
 
     @Override
-    public CommandResponse execute(CommandRequest req) throws IOException {
-        return execute(req.getElement());
+    public CommandResponse execute(CommandRequest req) throws IOException, SQLException {
+        return execute(req.getElement(), req.getUser().getId());
     }
 }

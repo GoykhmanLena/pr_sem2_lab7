@@ -16,13 +16,13 @@ public class HistoryCommand extends AbstractCommand {
         this.historyProvider = historyProvider;
     }
 
-    private CommandResponse execute(String clientID) {
+    private CommandResponse execute(Long clientID) {
         String lastNCommands = historyProvider.getHistoryByClientID(clientID).getLastNCommands(15);
         return new CommandResponse("История клиента с ID: " + clientID + "\n" + lastNCommands);
     }
 
     @Override
     public CommandResponse execute(CommandRequest req) throws IOException {
-        return execute(req.getClientID().toString());
+        return execute(req.getUser().getId());
     }
 }

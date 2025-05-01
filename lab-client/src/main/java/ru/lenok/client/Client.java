@@ -9,6 +9,7 @@ import java.net.UnknownHostException;
 public final class Client {
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
 
+
     private Client() {
         throw new UnsupportedOperationException("This is an utility class and can not be instantiated");
     }
@@ -41,7 +42,15 @@ public final class Client {
             logger.error("Ошибка: ", e);
             System.exit(-1);
         }
-        ClientApplication app = new ClientApplication(ip, port);
+        boolean isRegister = false;
+        String username = "kolobok";
+        String password = "12kolobok34";
+
+        username = "user2";
+        password = "user2";
+        //TODO ввод с командной строки/консоли + валидация
+
+        ClientApplication app = new ClientApplication(ip, port, isRegister, username, password);
         app.start();
     }
 }

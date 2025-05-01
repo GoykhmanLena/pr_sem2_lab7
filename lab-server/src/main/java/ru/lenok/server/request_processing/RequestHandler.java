@@ -5,13 +5,18 @@ import org.slf4j.LoggerFactory;
 import ru.lenok.common.CommandRequest;
 import ru.lenok.common.CommandResponse;
 import ru.lenok.common.CommandWithArgument;
+import ru.lenok.common.auth.LoginRequest;
+import ru.lenok.common.auth.LoginResponse;
+import ru.lenok.common.auth.User;
 import ru.lenok.common.commands.CommandBehavior;
 import ru.lenok.common.models.LabWork;
 import ru.lenok.server.commands.CommandName;
 import ru.lenok.server.commands.CommandRegistry;
 import ru.lenok.server.commands.IHistoryProvider;
+import ru.lenok.server.services.UserService;
 import ru.lenok.server.utils.HistoryList;
 
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,18 +29,22 @@ public class RequestHandler implements IHistoryProvider {
     private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
     private final CommandController commandController;
     private final CommandRegistry commandRegistry;
-    private Map<String, HistoryList> historyByClients = new ConcurrentHashMap();
+    private final UserController userController;
+    private Map<Long, HistoryList> historyByClients = new ConcurrentHashMap();
+    private final UserService userService;
 
     public CommandController getCommandController() {
         return commandController;
     }
 
-    public RequestHandler(CommandRegistry commandRegistry) {
+    public RequestHandler(CommandRegistry commandRegistry,UserService userService) {
+        this.userService = userService;
         this.commandRegistry = commandRegistry;
         this.commandController = new CommandController(commandRegistry);
+        this.userController = new UserController(userService, commandRegistry.getClientCommandDefinitions());
     }
 
-    public Object onReceive(Object inputData) {
+    public Object onReceive(Object inputData) throws SQLException {
         if (inputData instanceof CommandRequest) {
             CommandRequest commandRequest = (CommandRequest) inputData;
             CommandResponse validateResponse = validateCommandRequest(commandRequest);
@@ -44,18 +53,34 @@ public class RequestHandler implements IHistoryProvider {
             }
             String commandNameStr = commandRequest.getCommandWithArgument().getCommandName();
             CommandName commandName = CommandName.valueOf(commandNameStr);
-            UUID clientID = commandRequest.getClientID();
-            HistoryList historyList = historyByClients.get(clientID.toString());
+            User user = commandRequest.getUser();
+            User userFromDb;
+            try {
+                userFromDb = userService.login(user);
+                commandRequest.setUser(userFromDb);
+            } catch (Exception e){
+                return new LoginResponse(e, null, -1);
+            }
+            HistoryList historyList = historyByClients.get(userFromDb.getId());
             if (historyList == null) {
-                logger.warn("клиент с таким id не зарегистрирован, регистрирую " + clientID);
                 historyList = new HistoryList();
-                historyByClients.put(clientID.toString(), historyList);
+                historyByClients.put(userFromDb.getId(), historyList);
             }
             historyList.addCommand(commandName);
             return commandController.handle(commandRequest);
-        } else if (inputData instanceof UUID) {
-            historyByClients.put(inputData.toString(), new HistoryList());
-            return commandRegistry.getClientCommandDefinitions();
+        } else if (inputData instanceof LoginRequest) {
+            LoginRequest loginRequest = (LoginRequest) inputData;
+            LoginResponse loginResponse = null;
+            if (loginRequest.isRegister()){
+                loginResponse = userController.register(loginRequest.getUser());
+            }
+            else{
+                loginResponse = userController.login(loginRequest.getUser());
+            }
+            if (loginResponse.getError() == null){
+                historyByClients.put(loginResponse.getUserId(), new HistoryList());
+            }
+            return loginResponse;
         }
         return errorResponse("Вы передали какую-то чепуху: ", inputData);
     }
@@ -65,7 +90,7 @@ public class RequestHandler implements IHistoryProvider {
     }
 
     @Override
-    public HistoryList getHistoryByClientID(String clientID) {
+    public HistoryList getHistoryByClientID(Long clientID) {
         return historyByClients.get(clientID);
     }
 

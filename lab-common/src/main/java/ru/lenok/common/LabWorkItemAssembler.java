@@ -3,6 +3,7 @@ package ru.lenok.common;
 import ru.lenok.common.models.Difficulty;
 import ru.lenok.common.models.LabWork;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -109,7 +110,7 @@ public class LabWorkItemAssembler {
 
 
     public LabWork getLabWorkElement() {
-        return builder.build();
+        return builder.setCreationDate(LocalDateTime.now()).build();
     }
 
     public boolean isFinished() {

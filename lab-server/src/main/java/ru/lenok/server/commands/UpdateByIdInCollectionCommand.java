@@ -7,6 +7,7 @@ import ru.lenok.common.models.LabWork;
 import ru.lenok.server.collection.LabWorkService;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static ru.lenok.server.commands.CommandName.update_id;
 
@@ -18,7 +19,7 @@ public class UpdateByIdInCollectionCommand extends AbstractCommand {
         this.labWorkService = labWorkService;
     }
 
-    private CommandResponse execute(String id_str, LabWork element) {
+    private CommandResponse execute(String id_str, LabWork element) throws SQLException {
         Long id;
         try {
             id = Long.parseLong(id_str);
@@ -30,7 +31,7 @@ public class UpdateByIdInCollectionCommand extends AbstractCommand {
     }
 
     @Override
-    public CommandResponse execute(CommandRequest req) throws IOException {
+    public CommandResponse execute(CommandRequest req) throws IOException, SQLException {
         return execute(req.getCommandWithArgument().getArgument(), req.getElement());
     }
 }

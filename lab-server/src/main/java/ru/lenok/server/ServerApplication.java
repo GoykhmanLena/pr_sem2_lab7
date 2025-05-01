@@ -11,19 +11,20 @@ import ru.lenok.server.commands.IHistoryProvider;
 import ru.lenok.server.connectivity.IncomingMessage;
 import ru.lenok.server.connectivity.ServerConnectionListener;
 import ru.lenok.server.connectivity.ServerResponseSender;
+import ru.lenok.server.daos.DBConnector;
+import ru.lenok.server.daos.LabWorkDAO;
+import ru.lenok.server.daos.UserDAO;
 import ru.lenok.server.request_processing.RequestHandler;
+import ru.lenok.server.services.UserService;
 import ru.lenok.server.utils.HistoryList;
-import ru.lenok.server.utils.IdCounterService;
 import ru.lenok.server.utils.JsonReader;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Properties;
+import java.util.*;
 
-import static java.lang.Math.max;
 import static ru.lenok.server.commands.CommandName.save;
 
 public class ServerApplication implements IHistoryProvider {
@@ -36,6 +37,7 @@ public class ServerApplication implements IHistoryProvider {
     private final Properties properties;
     private ServerConnectionListener serverConnectionListener;
     private ServerResponseSender serverResponseSender;
+    private UserService userService;
 
     public ServerApplication(Properties properties) {
         this.properties = properties;
@@ -64,9 +66,9 @@ public class ServerApplication implements IHistoryProvider {
         }
         filename = properties.getProperty("initialCollectionPath");
         try {
-            initStorage();
+            initServices();
             this.commandRegistry = new CommandRegistry(labWorkService, this);
-            requestHandler = new RequestHandler(commandRegistry);
+            requestHandler = new RequestHandler(commandRegistry, userService);
 
             serverConnectionListener = new ServerConnectionListener(port);
             serverResponseSender = new ServerResponseSender(serverConnectionListener.getSocket());
@@ -91,26 +93,24 @@ public class ServerApplication implements IHistoryProvider {
         }));
     }
 
-    private void initStorage() {
+    private void initServices() {
         JsonReader jsonReader = new JsonReader();
-        Hashtable<String, LabWork> map = new Hashtable<>();
+        Hashtable<String, LabWork> initialState = new Hashtable<>();
         HashSet<Long> setOfId = new HashSet<>();
         try {
-            map = jsonReader.loadFromJson(filename);
+            initialState = jsonReader.loadFromJson(filename);
             logger.info("Файл успешно загружен: {}", filename);
         } catch (IOException e) {
             logger.error("Ошибка при чтении файла: {}", e.getMessage());
             logger.error("Программа завершается");
             System.exit(1);
         }
-        for (LabWork labWork : map.values()) {
-            IdCounterService.setId(max(labWork.getId(), IdCounterService.getId()));
+        for (LabWork labWork : initialState.values()) {
             setOfId.add(labWork.getId());
         }
-        if (setOfId.size() < map.size()) {
+        if (setOfId.size() < initialState.size()) {
             logger.warn("В файле есть повторяющиеся id — коллекция будет очищена");
-            map.clear();
-            IdCounterService.setId(0);
+            initialState.clear();
         }
         String dbPort = properties.getProperty("dbPort");
         String dbUser = properties.getProperty("dbUser");
@@ -118,16 +118,28 @@ public class ServerApplication implements IHistoryProvider {
         String dbHost = properties.getProperty("dbHost");
 
         try {
-            labWorkService = new LabWorkService(map, dbHost, dbPort, dbUser, dbPassword);
-        } catch (SQLException e) {
-            logger.error("Ошибка при инициализации LabWorkService: {}", e.getMessage());
+            DBConnector dbConnector = new DBConnector(dbHost, dbPort, dbUser, dbPassword);
+            UserDAO userDAO = new UserDAO(getUserIdsFromLabWorks(initialState), dbConnector);
+            LabWorkDAO labWorkDAO = new LabWorkDAO(initialState, dbConnector);
+            userService = new UserService(userDAO);
+            labWorkService = new LabWorkService(labWorkDAO);
+        } catch (SQLException | NoSuchAlgorithmException e) {
+            logger.error("Ошибка при инициализации сервисов: {}", e.getMessage());
             logger.error("Программа завершается");
             System.exit(1);
         }
     }
 
+    private Set<Long> getUserIdsFromLabWorks(Map<String, LabWork> initialState) {
+        Set<Long> result = new HashSet<>();
+        for (LabWork labWork : initialState.values()) {
+            result.add(labWork.getOwnerId());
+        }
+        return result;
+    }
+
     @Override
-    public HistoryList getHistoryByClientID(String clientID) {
+    public HistoryList getHistoryByClientID(Long clientID) {
         return requestHandler.getHistoryByClientID(clientID);
     }
 }

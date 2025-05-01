@@ -10,6 +10,7 @@ import ru.lenok.common.CommandRequest;
 import ru.lenok.common.CommandResponse;
 import ru.lenok.common.CommandWithArgument;
 import ru.lenok.common.LabWorkItemAssembler;
+import ru.lenok.common.auth.User;
 import ru.lenok.common.commands.CommandBehavior;
 
 import java.util.Map;
@@ -30,13 +31,15 @@ public class ClientInputProcessor {
     private Stack<String> scriptExecutionContext;
     private ExecuteScriptCommand executeScriptCommand;
     private ExitFromProgramCommand exitCommand;
+    private final User user;
 
-    public ClientInputProcessor(Map<String, CommandBehavior> commandDefinitions, ClientConnector clientConnector) {
+    public ClientInputProcessor(Map<String, CommandBehavior> commandDefinitions, ClientConnector clientConnector, User user) {
         this.scriptExecutionContext = new Stack<>();
         this.commandDefinitions = commandDefinitions;
         this.clientConnector = clientConnector;
         this.executeScriptCommand = new ExecuteScriptCommand(this, commandDefinitions.get(EXECUTE_SCRIPT_NAME));
         this.exitCommand = new ExitFromProgramCommand(commandDefinitions.get(EXIT_NAME));
+        this.user = user;
     }
 
     public void processInput(AbstractInput input, boolean interactive) throws Exception {
@@ -87,7 +90,7 @@ public class ClientInputProcessor {
                 throw new IllegalArgumentException("Вы передали элемент на команду, которой он не нужен: " + commandWithArgument);
             }
         }
-        CommandRequest commandRequest = new CommandRequest(commandWithArgument, labWorkItemAssembler == null ? null : labWorkItemAssembler.getLabWorkElement(), CLIENT_ID);
+        CommandRequest commandRequest = new CommandRequest(commandWithArgument, labWorkItemAssembler == null ? null : labWorkItemAssembler.getLabWorkElement(), user);
         if (EXECUTE_SCRIPT_NAME.equals(commandName)) {
             runExecuteScript(commandRequest);
         } else if (EXIT_NAME.equals(commandName)) {

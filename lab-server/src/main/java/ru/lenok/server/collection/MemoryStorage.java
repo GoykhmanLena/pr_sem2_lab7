@@ -6,14 +6,14 @@ import ru.lenok.common.models.LabWork;
 import java.util.Hashtable;
 
 @Data
-public class Storage {
+public class MemoryStorage {
     private final Hashtable<String, LabWork> map;
 
-    public Storage(Hashtable<String, LabWork> map) {
+    public MemoryStorage(Hashtable<String, LabWork> map) {
         this.map = map;
     }
 
-    public Storage() {
+    public MemoryStorage() {
         this.map = new Hashtable<>();
     }
 

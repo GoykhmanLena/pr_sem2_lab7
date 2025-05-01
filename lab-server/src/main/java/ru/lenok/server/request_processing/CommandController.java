@@ -15,6 +15,9 @@ public class CommandController {
         CommandWithArgument commandWithArgument = request.getCommandWithArgument();
         CommandName commandName = CommandName.valueOf(commandWithArgument.getCommandName());
         CommandResponse executionResult;
+        if (request.getElement() != null){
+            request.getElement().setOwnerId(request.getUser().getId());
+        }
         try {
             Executable command = commandRegistry.getCommand(commandName);
             executionResult = command.execute(request);

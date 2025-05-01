@@ -21,7 +21,7 @@ public class CommandWithLoggingExecuteTime implements Executable {
             return delegate.execute(req);
         } finally {
             long end = System.nanoTime();
-            System.out.println(delegate.getClass().getSimpleName() + " executed in " + (end - start) + " ms");
+            System.out.println(delegate.getClass().getSimpleName() + " executed in " + (end - start) + " ns");
         }
     }
 
