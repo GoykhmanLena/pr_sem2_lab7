@@ -6,6 +6,7 @@ import ru.lenok.common.commands.AbstractCommand;
 import ru.lenok.server.collection.LabWorkService;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static ru.lenok.server.commands.CommandName.print_ascending;
 
@@ -17,8 +18,8 @@ public class PrintAscendingCommand extends AbstractCommand {
         super(print_ascending.getBehavior(), "вывести элементы коллекции в порядке возрастания");
         this.labWorkService = labWorkService;
     }
-    private CommandResponse execute() {
-        return new CommandResponse(labWorkService.sortedByNameCollection());
+    private CommandResponse execute(){
+        return new CommandResponse(labWorkService.getWholeMap());
     }
 
     @Override

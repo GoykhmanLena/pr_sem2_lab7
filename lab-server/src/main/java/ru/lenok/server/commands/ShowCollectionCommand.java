@@ -5,10 +5,6 @@ import ru.lenok.common.CommandResponse;
 import ru.lenok.common.commands.AbstractCommand;
 import ru.lenok.server.collection.LabWorkService;
 
-import java.io.IOException;
-import java.sql.SQLException;
-
-import static ru.lenok.server.collection.LabWorkService.sortMapAndStringify;
 import static ru.lenok.server.commands.CommandName.show;
 
 public class ShowCollectionCommand extends AbstractCommand {
@@ -19,9 +15,9 @@ public class ShowCollectionCommand extends AbstractCommand {
         this.labWorkService = labWorkService;
     }
 
-    private CommandResponse execute() throws SQLException{
-        String sortCollectionAndStringifyResult = sortMapAndStringify(labWorkService.getWholeMap());
-        return new CommandResponse(labWorkService.getCollectionSize() == 0 ? "ПУСТАЯ КОЛЛЕКЦИЯ" : sortCollectionAndStringifyResult);
+    private CommandResponse execute(){
+        String answer = labWorkService.getWholeMap();
+        return new CommandResponse(answer.length() == 0 ? "ПУСТАЯ КОЛЛЕКЦИЯ" : answer);
     }
 
     @Override

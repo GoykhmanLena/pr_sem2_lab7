@@ -2,13 +2,12 @@ package ru.lenok.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.lenok.common.CommandRequest;
-import ru.lenok.common.CommandWithArgument;
 import ru.lenok.common.models.LabWork;
 import ru.lenok.server.collection.LabWorkService;
 import ru.lenok.server.commands.CommandRegistry;
 import ru.lenok.server.commands.IHistoryProvider;
 import ru.lenok.server.connectivity.IncomingMessage;
+import ru.lenok.server.connectivity.ResponseWithClient;
 import ru.lenok.server.connectivity.ServerConnectionListener;
 import ru.lenok.server.connectivity.ServerResponseSender;
 import ru.lenok.server.daos.DBConnector;
@@ -24,20 +23,26 @@ import java.net.DatagramSocket;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.*;
-
-import static ru.lenok.server.commands.CommandName.save;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class ServerApplication implements IHistoryProvider {
+
     private static final Logger logger = LoggerFactory.getLogger(ServerApplication.class);
     private String filename;
     private LabWorkService labWorkService;
     private CommandRegistry commandRegistry;
-    private RequestHandler requestHandler;
+    private Thread requestHandlerThread;
+    private RequestHandler reqHandler;
     private int port;
     private final Properties properties;
-    private ServerConnectionListener serverConnectionListener;
-    private ServerResponseSender serverResponseSender;
+    private Thread serverConnectionListenerThread;
+    private ServerConnectionListener serverConListener;
+    private Thread serverResponseSenderThread;
+    private ServerResponseSender serverRespSender;
     private UserService userService;
+    private final BlockingQueue<IncomingMessage> incomingMessageQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<ResponseWithClient> responseQueue = new LinkedBlockingQueue<>();
 
     public ServerApplication(Properties properties) {
         this.properties = properties;
@@ -46,18 +51,19 @@ public class ServerApplication implements IHistoryProvider {
 
     public void start() {
         logger.info("Сервер работает");
-        while (true) {
             try {
-                IncomingMessage incomingMessage = serverConnectionListener.listenAndReceiveMessage();
-                Object responseToBeSent = requestHandler.onReceive(incomingMessage.getMessage());
-                serverResponseSender.sendMessageToClient(responseToBeSent, incomingMessage.getClientIp(), incomingMessage.getClientPort());
+                serverConListener.run();
+                requestHandlerThread.start();
+                serverResponseSenderThread.start();
             } catch (Exception e) {
                 logger.error("Ошибка, ", e);
             }
-        }
     }
 
     private void init() {
+        String username = properties.getProperty("username");
+        String password = properties.getProperty("password");
+        Boolean isRegistration = Boolean.valueOf(properties.getProperty("isRegistration"));
         try {
             port = Integer.parseInt(properties.getProperty("listenPort"));
         } catch (NumberFormatException e) {
@@ -68,10 +74,15 @@ public class ServerApplication implements IHistoryProvider {
         try {
             initServices();
             this.commandRegistry = new CommandRegistry(labWorkService, this);
-            requestHandler = new RequestHandler(commandRegistry, userService);
 
-            serverConnectionListener = new ServerConnectionListener(port);
-            serverResponseSender = new ServerResponseSender(serverConnectionListener.getSocket());
+            reqHandler =  new RequestHandler(commandRegistry, userService, responseQueue, incomingMessageQueue);
+            requestHandlerThread = new Thread(reqHandler);
+
+            serverConListener = new ServerConnectionListener(port, incomingMessageQueue);
+           // serverConnectionListenerThread = new Thread(serverConListener);
+
+            serverRespSender = new ServerResponseSender(serverConListener.getSocket(), responseQueue);
+            serverResponseSenderThread = new Thread(serverRespSender);
             handleSaveOnTerminate();
         } catch (Exception e) {
             logger.error("Ошибка, ", e);
@@ -81,12 +92,9 @@ public class ServerApplication implements IHistoryProvider {
 
     private void handleSaveOnTerminate() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("Сервер завершает работу, коллекция сохраняется. Обрабатываем событие Ctrl + C.");
-            CommandWithArgument commandWithArgument = new CommandWithArgument(save.name(), save.getBehavior(), null);
-            CommandRequest commandRequest = new CommandRequest(commandWithArgument, null, null);
-            requestHandler.getCommandController().handle(commandRequest);
+            logger.info("Сервер завершает работу. Обрабатываем событие Ctrl + C.");
 
-            DatagramSocket socket = serverConnectionListener.getSocket();
+            DatagramSocket socket = serverConListener.getSocket();
             if (socket != null && !socket.isClosed()) {
                 socket.close();
             }
@@ -140,6 +148,6 @@ public class ServerApplication implements IHistoryProvider {
 
     @Override
     public HistoryList getHistoryByClientID(Long clientID) {
-        return requestHandler.getHistoryByClientID(clientID);
+        return reqHandler.getHistoryByClientID(clientID);
     }
 }

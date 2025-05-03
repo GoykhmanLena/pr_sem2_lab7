@@ -3,7 +3,7 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>
-                %highlight(%-5level) - %msg%n
+                %highlight(%-5level) %d{HH:mm:ss.SSS} [%thread] - %msg%n
             </pattern>
         </encoder>
 
@@ -17,7 +17,7 @@
     <appender name="ERROR_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>
-                %red(%-5level [%thread] %logger{36}) - %msg%n
+                %red(%-5level [%thread] %logger{36}) %d{HH:mm:ss.SSS} - %msg%n
             </pattern>
         </encoder>
 

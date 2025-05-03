@@ -13,38 +13,65 @@ import ru.lenok.common.models.LabWork;
 import ru.lenok.server.commands.CommandName;
 import ru.lenok.server.commands.CommandRegistry;
 import ru.lenok.server.commands.IHistoryProvider;
+import ru.lenok.server.connectivity.IncomingMessage;
+import ru.lenok.server.connectivity.ResponseWithClient;
 import ru.lenok.server.services.UserService;
 import ru.lenok.server.utils.HistoryList;
 
-import java.sql.SQLException;
 import java.util.Map;
-import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
 
 import static ru.lenok.common.commands.ArgType.LONG;
 import static ru.lenok.server.commands.CommandName.exit;
 import static ru.lenok.server.commands.CommandName.save;
 
-public class RequestHandler implements IHistoryProvider {
+public class RequestHandler implements IHistoryProvider, Runnable {
+    private static final int THREAD_COUNT = 5;
     private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
     private final CommandController commandController;
     private final CommandRegistry commandRegistry;
     private final UserController userController;
     private Map<Long, HistoryList> historyByClients = new ConcurrentHashMap();
     private final UserService userService;
+    private final BlockingQueue<ResponseWithClient> responseQueue;
+    private final BlockingQueue<IncomingMessage> incomingMessageQueue;
+    ForkJoinPool pool;
 
     public CommandController getCommandController() {
         return commandController;
     }
 
-    public RequestHandler(CommandRegistry commandRegistry,UserService userService) {
+    public RequestHandler(CommandRegistry commandRegistry, UserService userService, BlockingQueue<ResponseWithClient> responseQueue, BlockingQueue<IncomingMessage> incomingMessageQueue) {
         this.userService = userService;
         this.commandRegistry = commandRegistry;
         this.commandController = new CommandController(commandRegistry);
         this.userController = new UserController(userService, commandRegistry.getClientCommandDefinitions());
+        this.responseQueue = responseQueue;
+        this.incomingMessageQueue = incomingMessageQueue;
+    }
+    public void run(){
+        logger.info("Запущен RequestHandler");
+        int parallelism = Runtime.getRuntime().availableProcessors();
+        pool = new ForkJoinPool(parallelism);
+
+        while (true){
+            try {
+                IncomingMessage message = incomingMessageQueue.take();
+                pool.execute(() -> {
+                    Object response = onReceive(message.getMessage());
+                    responseQueue.add(new ResponseWithClient(response, message.getClientIp(), message.getClientPort()));
+                });
+            } catch (InterruptedException e) {
+                pool.shutdown();
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
-    public Object onReceive(Object inputData) throws SQLException {
+    public Object onReceive(Object inputData){
+        logger.info("Обрабатываю сообщение: " + inputData);
         if (inputData instanceof CommandRequest) {
             CommandRequest commandRequest = (CommandRequest) inputData;
             CommandResponse validateResponse = validateCommandRequest(commandRequest);
@@ -82,8 +109,7 @@ public class RequestHandler implements IHistoryProvider {
             }
             return loginResponse;
         }
-        return errorResponse("Вы передали какую-то чепуху: ", inputData);
-    }
+        return errorResponse("Вы передали какую-то чепуху: ", inputData);    }
 
     private static CommandResponse errorResponse(String message, Object inputData) {
         return new CommandResponse(new IllegalArgumentException(message + inputData));

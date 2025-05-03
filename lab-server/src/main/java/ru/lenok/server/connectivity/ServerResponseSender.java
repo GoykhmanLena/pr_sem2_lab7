@@ -9,20 +9,48 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import ru.lenok.common.util.SerializationUtils;
+import ru.lenok.server.request_processing.RequestHandler;
 
 @Data
-public class ServerResponseSender {
+public class ServerResponseSender implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(ServerResponseSender.class);
     private final SerializationUtils serializer = SerializationUtils.INSTANCE;
     private final DatagramSocket socket;
+    private final BlockingQueue<ResponseWithClient> responseQueue;
+    private final static int THREAD_COUNT = 5;
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_COUNT);
 
-    public ServerResponseSender(DatagramSocket datagramSocket) {
+    public ServerResponseSender(DatagramSocket datagramSocket, BlockingQueue<ResponseWithClient> responseQueue) {
         this.socket = datagramSocket;
+        this.responseQueue = responseQueue;
     }
 
-    public void sendMessageToClient(Object response, InetAddress clientIp, int clientPort) throws IOException, InterruptedException {
+    public void run(){
+        logger.info("Запущен ServerResponseSender");
+        while(true) {
+            try {
+                ResponseWithClient response = responseQueue.take();
+
+                threadPool.execute(() -> {
+                    try {
+                        sendMessageToClient(response.getResponse(), response.getClientIp(), response.getClientPort());
+                    } catch (IOException e) {
+                        logger.error("Ошибка: " + e);
+                    }
+                });
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        logger.info("Умер ServerResponseSender");
+    }
+    public void sendMessageToClient(Object response, InetAddress clientIp, int clientPort) throws IOException {
         SerializationUtils.ChunksWithCRC chunksWithCRC = serializer.serializeAndSplitToChunks(response);
         List<byte[]> chunks = chunksWithCRC.getChunks();
         int chunkCount = chunks.size();
@@ -37,7 +65,11 @@ public class ServerResponseSender {
             responsePacket = new DatagramPacket(responseDataChunk, responseDataChunk.length, clientIp, clientPort);
             socket.send(responsePacket);
             i++;
-            Thread.sleep(50);
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e){
+                //ignored
+            }
             logger.debug("Отправлен чанк " + i + " из " + chunkCount);
         }
         if (chunkCount == 1) {

@@ -3,13 +3,10 @@ package ru.lenok.server.commands;
 import ru.lenok.common.CommandRequest;
 import ru.lenok.common.CommandResponse;
 import ru.lenok.common.commands.AbstractCommand;
-import ru.lenok.common.models.LabWork;
 import ru.lenok.server.collection.LabWorkService;
 
 import java.io.IOException;
-import java.util.Map;
 
-import static ru.lenok.server.collection.LabWorkService.sortMapAndStringify;
 import static ru.lenok.server.commands.CommandName.filter_starts_with_name;
 
 
@@ -22,8 +19,7 @@ public class FilterStartsWithNameCommand extends AbstractCommand {
     }
 
     private CommandResponse execute(String arg) {
-        Map<String, LabWork> filteredMap = labWorkService.filterWithName(arg);
-        return new CommandResponse(sortMapAndStringify(filteredMap));
+        return new CommandResponse(labWorkService.filterWithName(arg));
     }
 
     @Override

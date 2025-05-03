@@ -20,7 +20,7 @@ public class SaveToFileCommand extends AbstractCommand {
     }
 
     private CommandResponse execute() throws IOException {
-        String json = labWorkService.getCollectionAsJson();
+  //      String json = labWorkService.getCollectionAsJson();
  //TODO       try (BufferedWriter writer = new BufferedWriter(new FileWriter(labWorkService.getFileName()))) {
  //           writer.write(json);
  //       }

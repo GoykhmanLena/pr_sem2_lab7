@@ -3,13 +3,10 @@ package ru.lenok.server.commands;
 import ru.lenok.common.CommandRequest;
 import ru.lenok.common.CommandResponse;
 import ru.lenok.common.commands.AbstractCommand;
-import ru.lenok.common.models.LabWork;
 import ru.lenok.server.collection.LabWorkService;
 
 import java.io.IOException;
-import java.util.Map;
 
-import static ru.lenok.server.collection.LabWorkService.sortMapAndStringify;
 import static ru.lenok.server.commands.CommandName.filter_contains_description;
 
 public class FilterContainsDescriptionCommand extends AbstractCommand {
@@ -21,8 +18,7 @@ public class FilterContainsDescriptionCommand extends AbstractCommand {
     }
 
     private CommandResponse execute(String arg) {
-        Map<String, LabWork> filteredMap = labWorkService.filterWithDescription(arg);
-        return new CommandResponse(sortMapAndStringify(filteredMap));
+        return new CommandResponse(labWorkService.filterWithDescription(arg));
     }
 
     @Override
