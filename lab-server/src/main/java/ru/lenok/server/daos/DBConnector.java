@@ -11,12 +11,12 @@ public class DBConnector {
     private static final Logger logger = LoggerFactory.getLogger(DBConnector.class);
     private Connection connection;
 
-    public DBConnector(String dbHost, String dbPort, String dbUser, String dbPassword) throws SQLException {
-        init(dbHost, dbPort, dbUser, dbPassword);
+    public DBConnector(String dbHost, String dbPort, String dbUser, String dbPassword, String dbSchema) throws SQLException {
+        init(dbHost, dbPort, dbUser, dbPassword, dbSchema);
     }
 
-    private void init(String dbHost, String dbPort, String dbUser, String dbPassword) throws SQLException {
-        String url = String.format("jdbc:postgresql://%s:%s/studs?currentSchema=s465561", dbHost, dbPort);
+    private void init(String dbHost, String dbPort, String dbUser, String dbPassword, String dbSchema) throws SQLException {
+        String url = String.format("jdbc:postgresql://%s:%s/studs?currentSchema=%s", dbHost, dbPort, dbSchema);
 
         connection = DriverManager.getConnection(url, dbUser, dbPassword);
         logger.info("Подключение к PostgreSQL успешно!");

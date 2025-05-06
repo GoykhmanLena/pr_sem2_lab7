@@ -78,18 +78,20 @@ public class LabWorkDAO {
     private static final Logger logger = LoggerFactory.getLogger(LabWorkDAO.class);
     private Connection connection;
 
-    public LabWorkDAO(Hashtable<String, LabWork> initialState, DBConnector dbConnector) throws SQLException {
+    public LabWorkDAO(Hashtable<String, LabWork> initialState, DBConnector dbConnector, boolean dbReinit, String dbSchema) throws SQLException {
         connection = dbConnector.getConnection();
-        init(initialState);
+        init(initialState, dbReinit, dbSchema);
     }
 
-    private void init(Hashtable<String, LabWork> initialState) throws SQLException {
-        initScheme(true);
-        persistInitialState(initialState);
+    private void init(Hashtable<String, LabWork> initialState, boolean dbReinit, String dbSchema) throws SQLException {
+        initScheme(dbReinit, dbSchema);
+        if (!initialState.isEmpty()) {
+            persistInitialState(initialState);
+        }
     }
 
     private void persistInitialState(Hashtable<String, LabWork> initialState) throws SQLException {
-        Long maxId = 0L;
+        Long maxId = 1L;
         for (String key : initialState.keySet()) {
             LabWork labWork = initialState.get(key);
             insert(key, labWork);
@@ -104,13 +106,13 @@ public class LabWorkDAO {
         connection.close();
     } //TODO
 
-    private void initScheme(boolean reInitDb) throws SQLException {
-        String dropALL =
-                "DROP INDEX IF EXISTS idx_labwork_name;\n" +
-                        "DROP INDEX IF EXISTS idx_labwork_unique_key;\n" +
-                        "DROP TABLE IF EXISTS lab_work;\n" +
-                        "DROP SEQUENCE IF EXISTS lab_work_seq;" +
-                        "DROP TYPE IF EXISTS DIFFICULTY;";
+    private void initScheme(boolean reinitDB, String dbSchema) throws SQLException {
+            String dropALL =
+                    "DROP INDEX IF EXISTS idx_labwork_name;\n" +
+                            "DROP INDEX IF EXISTS idx_labwork_unique_key;\n" +
+                            "DROP TABLE IF EXISTS lab_work;\n" +
+                            "DROP SEQUENCE IF EXISTS lab_work_seq;" +
+                            "DROP TYPE IF EXISTS DIFFICULTY;";
 
         String createSequence = "CREATE SEQUENCE IF NOT EXISTS lab_work_seq START 1;";
         String list = Arrays.stream(Difficulty.values())
@@ -119,11 +121,17 @@ public class LabWorkDAO {
 
         String createType =
                 "DO $$\n" +
-                        "    BEGIN\n" +
-                        "        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'difficulty') THEN\n" +
-                        "            CREATE TYPE DIFFICULTY AS ENUM (" + list + ");\n" +
-                        "        END IF;\n" +
-                        " END $$;";
+                        "DECLARE\n" +
+                        "    schema_oid oid;\n" +
+                        "BEGIN\n" +
+                        "    SELECT oid INTO schema_oid FROM pg_namespace WHERE nspname = '" + dbSchema + "';\n" +
+                        "    IF NOT EXISTS (\n" +
+                        "        SELECT 1 FROM pg_type t WHERE t.typname = 'difficulty' AND t.typnamespace = schema_oid\n" +
+                        "    ) THEN\n" +
+                        "        CREATE TYPE difficulty AS ENUM (" + list + ");\n" +
+                        "    END IF;\n" +
+                "END $$;";
+
 
         String createTable = "CREATE TABLE IF NOT EXISTS lab_work (\n" +
                 "                       id BIGINT DEFAULT nextval('lab_work_seq') PRIMARY KEY,\n" +
@@ -142,7 +150,7 @@ public class LabWorkDAO {
         String createIndexName = "CREATE INDEX IF NOT EXISTS idx_labwork_name ON lab_work (name);";
         String createIndexKey = "CREATE UNIQUE INDEX IF NOT EXISTS idx_labwork_unique_key ON lab_work (key);";
         try (Statement stmt = connection.createStatement()) {
-            if (reInitDb) {
+            if (reinitDB) {
                 stmt.executeUpdate(dropALL);
             }
             stmt.executeUpdate(createSequence);
@@ -153,7 +161,7 @@ public class LabWorkDAO {
         }
     }
 
-    public void insert(String key, LabWork labWork) throws SQLException {
+    public Long insert(String key, LabWork labWork) throws SQLException {
         String sql = labWork.getId() != null ? CREATE_LAB_WORK_WITH_ID : CREATE_LAB_WORK;
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
 
@@ -175,6 +183,7 @@ public class LabWorkDAO {
 
             int rowsInserted = pstmt.executeUpdate();
             logger.info("Вставлено строк: " + rowsInserted);
+            return getSequenceValue();
         }
     }
 
@@ -278,5 +287,22 @@ public class LabWorkDAO {
             statement.setLong(1, newValue);
             statement.executeQuery();
         }
+    }
+
+    private Long getSequenceValue(){
+        String query = "SELECT last_value FROM " + "lab_work_seq";
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            if (rs.next()) {
+                long lastValue = rs.getLong("last_value");
+                return lastValue;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

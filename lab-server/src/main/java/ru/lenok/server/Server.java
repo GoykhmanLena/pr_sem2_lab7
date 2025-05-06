@@ -48,11 +48,13 @@ public final class Server {
             String dbHost = properties.getProperty("dbHost");
             String dbPort = properties.getProperty("dbPort");
             String dbUser = properties.getProperty("dbUser");
+            String dbSchema = properties.getProperty("dbSchema");
             String dbPassword = properties.getProperty("dbPassword");
             String listenPort = properties.getProperty("listenPort");
+            String reinintDB = properties.getProperty("dbReinit");
             String initialCollectionPath = properties.getProperty("initialCollectionPath");
 
-            validateProperties(dbHost, dbPort, dbUser, dbPassword, listenPort);
+            validateProperties(dbHost, dbPort, dbUser, dbPassword, listenPort, reinintDB, dbSchema);
         } catch (FileNotFoundException e) {
             throw new Exception("Файл конфигурации не найден: " + path, e);
         } catch (IOException e) {
@@ -62,7 +64,7 @@ public final class Server {
         return properties;
     }
 
-    private static void validateProperties(String dbHost, String dbPort, String dbUser, String dbPassword, String listenPort) throws Exception {
+    private static void validateProperties(String dbHost, String dbPort, String dbUser, String dbPassword, String listenPort, String reinitDB, String dbSchema) throws Exception {
         if (dbHost == null || dbHost.isEmpty()) {
             throw new Exception("Параметр dbHost обязателен");
         }
@@ -73,6 +75,11 @@ public final class Server {
         if (dbPort == null || dbPort.isEmpty()) {
             throw new Exception("Параметр dbPort обязателен");
         }
+
+        if (dbSchema == null || dbSchema.isEmpty()) {
+            throw new Exception("Параметр dbSchema обязателен");
+        }
+
         if (!isValidPort(dbPort)) {
             throw new Exception("Параметр dbPort должен быть числом в диапазоне от 1 до 65535");
         }
@@ -90,6 +97,9 @@ public final class Server {
         }
         if (!isValidPort(listenPort)) {
             throw new Exception("Параметр listenPort должен быть числом в диапазоне от 1 до 65535");
+        }
+        if (reinitDB == null || reinitDB.isEmpty()){
+            throw new Exception("Параметр reinitDB обязателен");
         }
     }
     private static boolean isValidHost(String host) {

@@ -29,17 +29,19 @@ public class UserDAO {
                 RETURNING id
             """;
 
-    public UserDAO(Set<Long> initialState, DBConnector dbConnector) throws SQLException, NoSuchAlgorithmException {
+    public UserDAO(Set<Long> initialState, DBConnector dbConnector, boolean reinitDB) throws SQLException, NoSuchAlgorithmException {
         this.connection = dbConnector.getConnection();
-        init(initialState);
+        init(initialState, reinitDB);
     }
 
-    private void init(Set<Long> initialState) throws SQLException, NoSuchAlgorithmException {
-        initScheme(true);
-        persistInitialState(initialState);
+    private void init(Set<Long> initialState, boolean reinitDB) throws SQLException, NoSuchAlgorithmException {
+        initScheme(reinitDB);
+        if (reinitDB) {
+            persistInitialState(initialState);
+        }
     }
 
-    private void initScheme(boolean reInitDb) throws SQLException {
+    private void initScheme(boolean reinitDB) throws SQLException {
         String dropAllLabWork =
                 "DROP INDEX IF EXISTS idx_labwork_name;\n" +
                         "DROP INDEX IF EXISTS idx_labwork_unique_key;\n" +
@@ -55,13 +57,13 @@ public class UserDAO {
 
         String createTable = "CREATE TABLE IF NOT EXISTS users (\n" +
                 "                       id BIGINT DEFAULT nextval('user_seq') PRIMARY KEY,\n" +
-                "                       name VARCHAR(256) NOT NULL,\n" +
+                "                       name VARCHAR(256) NOT NULL UNIQUE,\n" +
                 "                       pw_hash VARCHAR(256) NOT NULL\n" +
                 ");";
         String createIndexName = "CREATE INDEX IF NOT EXISTS idx_user_name ON users (name);";
 
         try (Statement stmt = connection.createStatement()) {
-            if (reInitDb) {
+            if (reinitDB) {
                 stmt.executeUpdate(dropAllLabWork);
                 stmt.executeUpdate(dropALL);
             }
@@ -69,16 +71,18 @@ public class UserDAO {
             stmt.executeUpdate(createTable);
             stmt.executeUpdate(createIndexName);
         }
+        printSequence();
     }
 
     private void persistInitialState(Set<Long> initialState) throws SQLException, NoSuchAlgorithmException {
-        long maxId = 0;
+        long maxId = 1L;
         for (Long userId : initialState) {
             User user = new User(userId, "user" + userId, "user" + userId);
             insert(user);
             maxId = Math.max(maxId, userId);
         }
         setSequenceValue(maxId);
+        printSequence();
     }
 
     public User insert(User user) throws SQLException, NoSuchAlgorithmException {
@@ -123,10 +127,26 @@ public class UserDAO {
     }
 
     public void setSequenceValue(long newValue) throws SQLException {
-        String sql = "SELECT setval('user_seq', ?, true)";
+        String sql = "SELECT setval('user_seq', ?, false)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, newValue);
             statement.executeQuery();
+        }
+    }
+
+    private void printSequence(){
+        String query = "SELECT last_value FROM " + "user_seq";
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            if (rs.next()) {
+                long lastValue = rs.getLong("last_value");
+                System.out.println("Current sequence value: " + lastValue);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 

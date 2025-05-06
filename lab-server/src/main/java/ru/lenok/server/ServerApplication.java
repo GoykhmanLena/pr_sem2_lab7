@@ -29,7 +29,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class ServerApplication implements IHistoryProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerApplication.class);
-    private String filename;
     private LabWorkService labWorkService;
     private CommandRegistry commandRegistry;
     private Thread requestHandlerThread;
@@ -61,16 +60,13 @@ public class ServerApplication implements IHistoryProvider {
     }
 
     private void init() {
-        String username = properties.getProperty("username");
-        String password = properties.getProperty("password");
-        Boolean isRegistration = Boolean.valueOf(properties.getProperty("isRegistration"));
         try {
             port = Integer.parseInt(properties.getProperty("listenPort"));
         } catch (NumberFormatException e) {
             logger.error("Ошибка, не распознан порт: ", e);
             System.exit(1);
         }
-        filename = properties.getProperty("initialCollectionPath");
+
         try {
             initServices();
             this.commandRegistry = new CommandRegistry(labWorkService, this);
@@ -102,37 +98,48 @@ public class ServerApplication implements IHistoryProvider {
     }
 
     private void initServices() {
-        JsonReader jsonReader = new JsonReader();
-        Hashtable<String, LabWork> initialState = new Hashtable<>();
-        HashSet<Long> setOfId = new HashSet<>();
-        try {
-            initialState = jsonReader.loadFromJson(filename);
-            logger.info("Файл успешно загружен: {}", filename);
-        } catch (IOException e) {
-            logger.error("Ошибка при чтении файла: {}", e.getMessage());
-            logger.error("Программа завершается");
-            System.exit(1);
-        }
-        for (LabWork labWork : initialState.values()) {
-            setOfId.add(labWork.getId());
-        }
-        if (setOfId.size() < initialState.size()) {
-            logger.warn("В файле есть повторяющиеся id — коллекция будет очищена");
-            initialState.clear();
-        }
         String dbPort = properties.getProperty("dbPort");
         String dbUser = properties.getProperty("dbUser");
         String dbPassword = properties.getProperty("dbPassword");
         String dbHost = properties.getProperty("dbHost");
+        String dbSchema = properties.getProperty("dbSchema");
+        String dbReinit = properties.getProperty("dbReinit");
+        String filename = properties.getProperty("initialCollectionPath");
+
+        boolean reinitDB = Boolean.parseBoolean(dbReinit);
+
+        Hashtable<String, LabWork> initialState = new Hashtable<>();
+        if (reinitDB && filename != null && !filename.isEmpty()) {
+
+            JsonReader jsonReader = new JsonReader();
+            HashSet<Long> setOfId = new HashSet<>();
+            try {
+                initialState = jsonReader.loadFromJson(filename);
+                logger.info("Файл успешно загружен: {}", filename);
+            } catch (IOException e) {
+                logger.error("Ошибка при чтении файла: {}", e.getMessage());
+                logger.error("Программа завершается");
+                System.exit(1);
+            }
+            for (LabWork labWork : initialState.values()) {
+                setOfId.add(labWork.getId());
+            }
+            if (setOfId.size() < initialState.size()) {
+                logger.warn("В файле есть повторяющиеся id — коллекция будет очищена");
+                initialState.clear();
+            }
+        }
+
 
         try {
-            DBConnector dbConnector = new DBConnector(dbHost, dbPort, dbUser, dbPassword);
-            UserDAO userDAO = new UserDAO(getUserIdsFromLabWorks(initialState), dbConnector);
-            LabWorkDAO labWorkDAO = new LabWorkDAO(initialState, dbConnector);
+            DBConnector dbConnector = new DBConnector(dbHost, dbPort, dbUser, dbPassword, dbSchema);
+            UserDAO userDAO = new UserDAO(getUserIdsFromLabWorks(initialState), dbConnector, reinitDB);
+            LabWorkDAO labWorkDAO = new LabWorkDAO(initialState, dbConnector, reinitDB, dbSchema);
             userService = new UserService(userDAO);
             labWorkService = new LabWorkService(labWorkDAO);
         } catch (SQLException | NoSuchAlgorithmException e) {
-            logger.error("Ошибка при инициализации сервисов: {}", e.getMessage());
+            logger.error("Ошибка при инициализации сервисов: {} {}", e.getMessage());
+            e.printStackTrace();
             logger.error("Программа завершается");
             System.exit(1);
         }

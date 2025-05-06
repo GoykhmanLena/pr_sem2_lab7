@@ -35,15 +35,18 @@ public class LabWorkService {
             if (memoryStorage.containsKey(key)) {
                 throw new IllegalArgumentException("Ошибка: элемент с таким ключом уже существует, ключ = " + key);
             }
-            labWorkDAO.insert(key, lab);
+            Long elemId = labWorkDAO.insert(key, lab);
+            lab.setId(elemId);
             memoryStorage.put(key, lab);
             return "";
         }
     }
 
     public void remove(String key) throws SQLException {
-        labWorkDAO.delete(key); //TODO synchronized block???
-        memoryStorage.remove(key);
+        synchronized (memoryStorage) {
+            labWorkDAO.delete(key);
+            memoryStorage.remove(key);
+        }
     }
 
     public int getCollectionSize(){
@@ -52,8 +55,10 @@ public class LabWorkService {
     }
 
     public void clearCollection(long ownerId) throws SQLException {
-        labWorkDAO.deleteForUser(ownerId);
-        memoryStorage.deleteForUser(ownerId); //TODO synchronized block???
+        synchronized (memoryStorage) {
+            labWorkDAO.deleteForUser(ownerId);
+            memoryStorage.deleteForUser(ownerId);
+        }
     }
 
  /*   public String getCollectionAsJson() throws IOException {
