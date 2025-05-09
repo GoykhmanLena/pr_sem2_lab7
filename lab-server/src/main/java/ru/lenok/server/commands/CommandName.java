@@ -23,7 +23,13 @@ public enum CommandName {
     info(SIMPLE),
     clear(SIMPLE),
     history(SIMPLE),
-    execute_script(STRING_ARG_NO_ELEM_CLIENT);
+    execute_script(STRING_ARG_NO_ELEM_CLIENT),
+    make_offer(LONG_LONG_ARGS_NO_ELEM),
+    show_products(SIMPLE),
+    show_incoming_offers(SIMPLE),
+    show_outgoing_offers(SIMPLE),
+    accept_offer(LONG_ARG_NO_ELEM),
+    register_product(STRING_ARG_NO_ELEM);
     private final CommandBehavior behavior;
 
     CommandName(CommandBehavior behavior) {
@@ -39,11 +45,11 @@ public enum CommandName {
     }
 
     public ArgType getArgType() {
-        return behavior.getArgType();
+        return behavior.getArgType1();
     }
 
     public boolean hasArg() {
-        return behavior.getArgType() != null;
+        return behavior.getArgType1() != null;
     }
 
     public boolean isClient() {

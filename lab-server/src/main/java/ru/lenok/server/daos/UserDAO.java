@@ -90,8 +90,8 @@ public class UserDAO {
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
 
             pstmt.setString(1, user.getUsername());
-            String UserPassword = user.getPassword();
-            pstmt.setString(2, PasswordHasher.hash(UserPassword));
+            String userPassword = user.getPassword();
+            pstmt.setString(2, PasswordHasher.hash(userPassword));
 
             if (user.getId() != null) {
                 pstmt.setLong(3, user.getId());
@@ -100,7 +100,7 @@ public class UserDAO {
             try (ResultSet resultSet = pstmt.executeQuery()) {
                 if (resultSet.next()) {
                     long userId = resultSet.getLong(1);
-                    User userFromDb = new User(userId, user.getUsername(), PasswordHasher.hash(UserPassword));
+                    User userFromDb = new User(userId, user.getUsername(), PasswordHasher.hash(userPassword));
                     return userFromDb;
                 } else {
                     throw new SQLException("Ошибка при вставке пользователя, " + user);

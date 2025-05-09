@@ -97,6 +97,14 @@ public class MemoryStorage {
                 .orElseThrow(() -> new IllegalArgumentException("Нет элемента с таким id"));
     }
 
+    public synchronized LabWork getLabWorkById(Long id) {
+        return map.entrySet().stream()
+                .filter(entry -> entry.getValue().getId().equals(id))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Нет элемента с таким id"));
+    }
+
     public synchronized void checkAccess(Long currentUserId, String key){
         LabWork labWork = map.get(key);
         if (labWork != null){

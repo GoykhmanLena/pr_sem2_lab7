@@ -8,7 +8,6 @@ import ru.lenok.common.models.LabWork;
 
 import java.sql.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class LabWorkDAO {
     private static final String DELETE_FOR_USER = "DELETE FROM lab_work WHERE owner_id = ?";
@@ -45,7 +44,7 @@ public class LabWorkDAO {
                     discipline_name,
                     discipline_practice_hours,
                     owner_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?::difficulty, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     private static final String CREATE_LAB_WORK_WITH_ID = """
@@ -62,7 +61,7 @@ public class LabWorkDAO {
                     discipline_practice_hours,
                     owner_id,
                     id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?::difficulty, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     private static final String SELECT_ALL = """
@@ -78,13 +77,13 @@ public class LabWorkDAO {
     private static final Logger logger = LoggerFactory.getLogger(LabWorkDAO.class);
     private Connection connection;
 
-    public LabWorkDAO(Hashtable<String, LabWork> initialState, DBConnector dbConnector, boolean dbReinit, String dbSchema) throws SQLException {
+    public LabWorkDAO(Hashtable<String, LabWork> initialState, DBConnector dbConnector, boolean dbReinit) throws SQLException {
         connection = dbConnector.getConnection();
-        init(initialState, dbReinit, dbSchema);
+        init(initialState, dbReinit);
     }
 
-    private void init(Hashtable<String, LabWork> initialState, boolean dbReinit, String dbSchema) throws SQLException {
-        initScheme(dbReinit, dbSchema);
+    private void init(Hashtable<String, LabWork> initialState, boolean dbReinit) throws SQLException {
+        initScheme(dbReinit);
         if (!initialState.isEmpty()) {
             persistInitialState(initialState);
         }
@@ -106,7 +105,7 @@ public class LabWorkDAO {
         connection.close();
     } //TODO
 
-    private void initScheme(boolean reinitDB, String dbSchema) throws SQLException {
+    private void initScheme(boolean reinitDB) throws SQLException {
             String dropALL =
                     "DROP INDEX IF EXISTS idx_labwork_name;\n" +
                             "DROP INDEX IF EXISTS idx_labwork_unique_key;\n" +
@@ -115,22 +114,6 @@ public class LabWorkDAO {
                             "DROP TYPE IF EXISTS DIFFICULTY;";
 
         String createSequence = "CREATE SEQUENCE IF NOT EXISTS lab_work_seq START 1;";
-        String list = Arrays.stream(Difficulty.values())
-                .map(d -> "'" + d.name() + "'")
-                .collect(Collectors.joining(", "));
-
-        String createType =
-                "DO $$\n" +
-                        "DECLARE\n" +
-                        "    schema_oid oid;\n" +
-                        "BEGIN\n" +
-                        "    SELECT oid INTO schema_oid FROM pg_namespace WHERE nspname = '" + dbSchema + "';\n" +
-                        "    IF NOT EXISTS (\n" +
-                        "        SELECT 1 FROM pg_type t WHERE t.typname = 'difficulty' AND t.typnamespace = schema_oid\n" +
-                        "    ) THEN\n" +
-                        "        CREATE TYPE difficulty AS ENUM (" + list + ");\n" +
-                        "    END IF;\n" +
-                "END $$;";
 
 
         String createTable = "CREATE TABLE IF NOT EXISTS lab_work (\n" +
@@ -142,7 +125,7 @@ public class LabWorkDAO {
                 "                       creation_date TIMESTAMP NOT NULL,\n" +
                 "                       minimal_point DOUBLE PRECISION NOT NULL,\n" +
                 "                       description VARCHAR(2863) NOT NULL,\n" +
-                "                       difficulty DIFFICULTY NOT NULL,\n" +
+                "                       difficulty VARCHAR(256) NOT NULL,\n" +
                 "                       discipline_name VARCHAR(256),\n" +
                 "                       discipline_practice_hours BIGINT NOT NULL,\n" +
                 "                       owner_id BIGINT REFERENCES users(id)" +
@@ -154,7 +137,6 @@ public class LabWorkDAO {
                 stmt.executeUpdate(dropALL);
             }
             stmt.executeUpdate(createSequence);
-            stmt.executeUpdate(createType);
             stmt.executeUpdate(createTable);
             stmt.executeUpdate(createIndexName);
             stmt.executeUpdate(createIndexKey);
@@ -189,10 +171,6 @@ public class LabWorkDAO {
 
     public void updateById(String key, LabWork labWork) throws SQLException {
         try (PreparedStatement pstmt = connection.prepareStatement(UPDATE_LAB_WORK)) {
-            PGobject difficulty = new PGobject();
-            difficulty.setType("difficulty");
-            difficulty.setValue(labWork.getDifficulty().name());
-
 
             pstmt.setString(1, key);
             pstmt.setString(2, labWork.getName());
@@ -201,7 +179,7 @@ public class LabWorkDAO {
             pstmt.setTimestamp(5, Timestamp.valueOf(labWork.getCreationDate()));
             pstmt.setDouble(6, labWork.getMinimalPoint());
             pstmt.setString(7, labWork.getDescription());
-            pstmt.setObject(8, difficulty);
+            pstmt.setString(8, labWork.getDifficulty().name());
             pstmt.setString(9, labWork.getDiscipline().getName());
             pstmt.setLong(10, labWork.getDiscipline().getPracticeHours());
             pstmt.setLong(11, labWork.getOwnerId());

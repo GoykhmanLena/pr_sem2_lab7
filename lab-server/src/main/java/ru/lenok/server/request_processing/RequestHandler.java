@@ -141,16 +141,29 @@ public class RequestHandler implements IHistoryProvider, Runnable {
             return errorResponse("Вы МОШЕННИК: эта команда на сервере не разрешена: ", commandRequest);
         }
         CommandBehavior commandBehavior = commandName.getBehavior();
-        String argument = commandWithArgument.getArgument();
-        if (commandBehavior.hasArg()) {
-            if (argument == null || argument.isEmpty()) {
+        String argument1 = commandWithArgument.getArgument1();
+        if (commandBehavior.hasArg1()) {
+            if (argument1 == null || argument1.isEmpty()) {
                 return errorResponse("Ожидался аргумент, ничего не пришло: ", commandRequest);
             }
-            if (commandBehavior.getArgType() == LONG){
+            if (commandBehavior.getArgType1() == LONG){
                 try {
-                    Long.parseLong(argument);
+                    Long.parseLong(argument1);
                 } catch (NumberFormatException e){
                     return errorResponse("Ожидался аргумент типа Long, пришло: ", commandRequest);
+                }
+            }
+        }
+        if (commandBehavior.has2Args()) {
+            String argument2 = commandWithArgument.getArgument2();
+            if (argument2 == null || argument2.isEmpty()) {
+                return errorResponse("Ожидалось 2 аргумента, второй аргумент пустой: ", commandRequest);
+            }
+            if (commandBehavior.getArgType2() == LONG){
+                try {
+                    Long.parseLong(argument2);
+                } catch (NumberFormatException e){
+                    return errorResponse("Ожидался 2й аргумент типа Long, пришло: ", commandRequest);
                 }
             }
         }

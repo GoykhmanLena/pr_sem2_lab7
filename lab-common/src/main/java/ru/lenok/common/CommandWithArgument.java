@@ -11,5 +11,6 @@ import java.io.Serializable;
 public class CommandWithArgument implements Serializable {
     private final String commandName;
     private final CommandBehavior commandBehavior;
-    private final String argument;
+    private final String argument1;
+    private final String argument2;
 }

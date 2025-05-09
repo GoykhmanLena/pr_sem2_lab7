@@ -25,7 +25,7 @@ public class RemoveByKeyFromCollectionCommand extends AbstractCommand {
 
     @Override
     public CommandResponse execute(CommandRequest req) throws IOException, SQLException {
-        String key = req.getCommandWithArgument().getArgument();
+        String key = req.getCommandWithArgument().getArgument1();
         labWorkService.checkAccess(req.getUser().getId(), key);
         return execute(key);
     }

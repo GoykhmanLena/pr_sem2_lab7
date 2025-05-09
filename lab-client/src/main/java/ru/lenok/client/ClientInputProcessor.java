@@ -16,7 +16,6 @@ import ru.lenok.common.commands.CommandBehavior;
 import java.util.Map;
 import java.util.Stack;
 
-import static ru.lenok.client.ClientApplication.CLIENT_ID;
 import static ru.lenok.common.commands.ArgType.LONG;
 
 @Data
@@ -102,7 +101,7 @@ public class ClientInputProcessor {
 
     private void runExecuteScript(CommandRequest commandRequest) throws Exception {
         try {
-            executeScriptCommand.execute(commandRequest.getCommandWithArgument().getArgument());
+            executeScriptCommand.execute(commandRequest.getCommandWithArgument().getArgument1());
         } catch (Exception e) {
             logger.error("Произошла ошибка при выполнении скрипта", e);
         }
@@ -125,6 +124,9 @@ public class ClientInputProcessor {
     }
 
     private CommandWithArgument parseLineAsCommand(String line) {
+        String argument1 = null;
+        String argument2 = null;
+
         String[] splittedLine = line.trim().split("\\s+");
         CommandWithArgument result;
         String commandNameStr = splittedLine[0];
@@ -132,21 +134,38 @@ public class ClientInputProcessor {
         if (commandBehavior == null) {
             throw new IllegalArgumentException("Такой команды НЕТ: " + commandNameStr);
         }
-        if (!commandBehavior.hasArg() && splittedLine.length >= 2) {
+        if ((!commandBehavior.hasArg1() && splittedLine.length >= 2) || (!commandBehavior.has2Args() && splittedLine.length >= 3)) {
             throw new IllegalArgumentException("Слишком много аргументов, ожидалось 0: " + line);
-        } else if (commandBehavior.hasArg()) {
-            if (splittedLine.length == 1 || splittedLine.length > 2) {
+        } else if (commandBehavior.hasArg1()) {
+            if (commandBehavior.has2Args()){
+                if (splittedLine.length != 3) {
+                    throw new IllegalArgumentException("Неправильное количество аргументов, ожидалось 2: " + line);
+                }
+
+                if (commandBehavior.getArgType2() == LONG) {
+                    try {
+                        Long.parseLong(splittedLine[2]);
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Ожидался 2й аргумент типа Long, пришло: " + line);
+                    }
+                }
+                argument2 = splittedLine[2];
+            }
+
+            else if (splittedLine.length == 1 || splittedLine.length > 2) {
                 throw new IllegalArgumentException("Неправильное количество аргументов, ожидался 1: " + line);
             }
-            if (commandBehavior.getArgType() == LONG) {
+
+            if (commandBehavior.getArgType1() == LONG) {
                 try {
                     Long.parseLong(splittedLine[1]);
                 } catch (NumberFormatException e) {
                     throw new IllegalArgumentException("Ожидался аргумент типа Long, пришло: " + line);
                 }
             }
+            argument1 = splittedLine[1];
         }
-        result = new CommandWithArgument(commandNameStr, commandBehavior, splittedLine.length == 2 ? splittedLine[1] : null);
+        result = new CommandWithArgument(commandNameStr, commandBehavior, argument1, argument2);
         return result;
     }
 

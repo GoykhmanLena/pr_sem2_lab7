@@ -29,6 +29,6 @@ public class InsertToCollectionCommand extends AbstractCommand {
 
     @Override
     public CommandResponse execute(CommandRequest req) throws IOException, SQLException {
-        return execute(req.getCommandWithArgument().getArgument(), req.getElement());
+        return execute(req.getCommandWithArgument().getArgument1(), req.getElement());
     }
 }

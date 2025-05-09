@@ -10,10 +10,10 @@ import ru.lenok.server.connectivity.IncomingMessage;
 import ru.lenok.server.connectivity.ResponseWithClient;
 import ru.lenok.server.connectivity.ServerConnectionListener;
 import ru.lenok.server.connectivity.ServerResponseSender;
-import ru.lenok.server.daos.DBConnector;
-import ru.lenok.server.daos.LabWorkDAO;
-import ru.lenok.server.daos.UserDAO;
+import ru.lenok.server.daos.*;
 import ru.lenok.server.request_processing.RequestHandler;
+import ru.lenok.server.services.OfferService;
+import ru.lenok.server.services.ProductService;
 import ru.lenok.server.services.UserService;
 import ru.lenok.server.utils.HistoryList;
 import ru.lenok.server.utils.JsonReader;
@@ -42,6 +42,8 @@ public class ServerApplication implements IHistoryProvider {
     private UserService userService;
     private final BlockingQueue<IncomingMessage> incomingMessageQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<ResponseWithClient> responseQueue = new LinkedBlockingQueue<>();
+    private ProductService productService;
+    private OfferService offerService;
 
     public ServerApplication(Properties properties) {
         this.properties = properties;
@@ -69,7 +71,7 @@ public class ServerApplication implements IHistoryProvider {
 
         try {
             initServices();
-            this.commandRegistry = new CommandRegistry(labWorkService, this);
+            this.commandRegistry = new CommandRegistry(labWorkService, productService, offerService, this);
 
             reqHandler =  new RequestHandler(commandRegistry, userService, responseQueue, incomingMessageQueue);
             requestHandlerThread = new Thread(reqHandler);
@@ -133,10 +135,15 @@ public class ServerApplication implements IHistoryProvider {
 
         try {
             DBConnector dbConnector = new DBConnector(dbHost, dbPort, dbUser, dbPassword, dbSchema);
-            UserDAO userDAO = new UserDAO(getUserIdsFromLabWorks(initialState), dbConnector, reinitDB);
-            LabWorkDAO labWorkDAO = new LabWorkDAO(initialState, dbConnector, reinitDB, dbSchema);
+            Set<Long> userIdsFromLabWorks = getUserIdsFromLabWorks(initialState);
+            UserDAO userDAO = new UserDAO(userIdsFromLabWorks, dbConnector, reinitDB);
+            ProductDAO productDAO = new ProductDAO(userIdsFromLabWorks, dbConnector, reinitDB);
+            LabWorkDAO labWorkDAO = new LabWorkDAO(initialState, dbConnector, reinitDB);
+            OfferDAO offerDAO = new OfferDAO(dbConnector, reinitDB);
             userService = new UserService(userDAO);
             labWorkService = new LabWorkService(labWorkDAO);
+            productService = new ProductService(productDAO);
+            offerService = new OfferService(labWorkDAO, productDAO, offerDAO, labWorkService);
         } catch (SQLException | NoSuchAlgorithmException e) {
             logger.error("Ошибка при инициализации сервисов: {} {}", e.getMessage());
             e.printStackTrace();

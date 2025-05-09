@@ -116,4 +116,8 @@ public class LabWorkService {
     public void checkAccess(Long currentUserId, String key){
         memoryStorage.checkAccess(currentUserId, key);
     }
+
+    public LabWork getLabWorkById(Long labWorkId) {
+        return memoryStorage.getLabWorkById(labWorkId);
+    }
 }

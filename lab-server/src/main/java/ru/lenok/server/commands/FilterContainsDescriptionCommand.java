@@ -23,6 +23,6 @@ public class FilterContainsDescriptionCommand extends AbstractCommand {
 
     @Override
     public CommandResponse execute(CommandRequest req) throws IOException {
-        return execute(req.getCommandWithArgument().getArgument());
+        return execute(req.getCommandWithArgument().getArgument1());
     }
 }
