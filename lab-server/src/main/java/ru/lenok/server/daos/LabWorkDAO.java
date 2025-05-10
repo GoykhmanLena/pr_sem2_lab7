@@ -3,8 +3,10 @@ package ru.lenok.server.daos;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.lenok.common.auth.User;
 import ru.lenok.common.models.Difficulty;
 import ru.lenok.common.models.LabWork;
+import ru.lenok.server.utils.PasswordHasher;
 
 import java.sql.*;
 import java.util.*;
@@ -45,6 +47,7 @@ public class LabWorkDAO {
                     discipline_practice_hours,
                     owner_id
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
             """;
 
     private static final String CREATE_LAB_WORK_WITH_ID = """
@@ -62,6 +65,7 @@ public class LabWorkDAO {
                     owner_id,
                     id
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
             """;
 
     private static final String SELECT_ALL = """
@@ -91,13 +95,19 @@ public class LabWorkDAO {
 
     private void persistInitialState(Hashtable<String, LabWork> initialState) throws SQLException {
         Long maxId = 1L;
-        for (String key : initialState.keySet()) {
-            LabWork labWork = initialState.get(key);
-            insert(key, labWork);
-            maxId = Math.max(labWork.getId(), maxId);
-        }
+        try {
+            for (String key : initialState.keySet()) {
+                LabWork labWork = initialState.get(key);
+                insert(key, labWork);
+                maxId = Math.max(labWork.getId(), maxId);
+            }
 
-        setSequenceValue(maxId);
+            setSequenceValue(maxId);
+            connection.commit();
+        } catch (SQLException e){
+            connection.rollback();
+            throw e;
+        }
     }
 
 
@@ -140,6 +150,10 @@ public class LabWorkDAO {
             stmt.executeUpdate(createTable);
             stmt.executeUpdate(createIndexName);
             stmt.executeUpdate(createIndexKey);
+            connection.commit();
+        } catch (SQLException e){
+            connection.rollback();
+            throw e;
         }
     }
 
@@ -162,10 +176,16 @@ public class LabWorkDAO {
             if (labWork.getId() != null) {
                 pstmt.setLong(12, labWork.getId());
             }
+            long id;
 
-            int rowsInserted = pstmt.executeUpdate();
-            logger.info("Вставлено строк: " + rowsInserted);
-            return getSequenceValue();
+            try (ResultSet resultSet = pstmt.executeQuery()) {
+                if (resultSet.next()) {
+                    id = resultSet.getLong(1);
+                } else {
+                    throw new SQLException("Ошибка при вставке LabWork");
+                }
+            }
+            return id;
         }
     }
 

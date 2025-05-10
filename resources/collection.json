@@ -1,155 +1,155 @@
 {
-  "bnm": {
-    "id": 29,
+  "pr_lab2": {
+    "id": 7,
     "ownerId": 1,
-    "name": "io",
+    "name": "Pokemon",
     "coordinates": {
       "x": 89.0,
       "y": 987.0
     },
     "creationDate": "2025-04-18T11:12:55.7065203",
-    "minimalPoint": 87.0,
-    "description": "vhj",
+    "minimalPoint": 15.0,
+    "description": "Create your own Pokemons!!!",
     "difficulty": "NORMAL",
     "discipline": {
-      "name": "vghhj",
-      "practiceHours": 876
+      "name": "proga",
+      "practiceHours": 200
     }
   },
-  "check_saving": {
-    "id": 23,
+  "opd_lab2": {
+    "id": 4,
     "ownerId": 2,
-    "name": "njkjop",
+    "name": "BVM first",
     "coordinates": {
       "x": 98.4,
       "y": 90.1
     },
     "creationDate": "2025-04-13T12:08:45.9057606",
     "minimalPoint": 90.0,
-    "description": "raaaaaaaaa",
-    "difficulty": "NORMAL",
+    "description": "Many numbers 0 and 1",
+    "difficulty": "VERY_EASY",
     "discipline": {
-      "name": "njiokne",
-      "practiceHours": 234
+      "name": "OPD",
+      "practiceHours": 186
     }
   },
-  "bubuka": {
-    "id": 22,
-    "ownerId": 3,
-    "name": "buuuuuu",
+  "pr_lab1": {
+    "id": 2,
+    "ownerId": 1,
+    "name": "Array Java",
     "coordinates": {
       "x": 56.8,
       "y": 67.0
     },
     "creationDate": "2025-04-13T12:08:45.8321244",
-    "minimalPoint": 87.0,
-    "description": "kjhvc",
+    "minimalPoint": 10.0,
+    "description": "Просто попробуй написать минимально рабочий код",
     "difficulty": "VERY_EASY",
     "discipline": {
-      "name": "kjjbhhgv",
-      "practiceHours": 99
+      "name": "proga",
+      "practiceHours": 200
     }
   },
-  "gogogog": {
+  "pr_lab3-4": {
     "id": 8,
-    "ownerId": 4,
-    "name": "bhjk",
+    "ownerId": 1,
+    "name": "java OOP",
     "coordinates": {
       "x": 678.0,
       "y": 67.0
     },
     "creationDate": "2025-03-29T12:10:37.9544639",
-    "minimalPoint": 678.0,
-    "description": "cttoohbu",
+    "minimalPoint": 20.0,
+    "description": "Оживи текст",
     "difficulty": "NORMAL",
     "discipline": {
-      "name": "vbnhjk",
-      "practiceHours": 89
+      "name": "proga",
+      "practiceHours": 200
     }
   },
-  "vfghjk": {
-    "id": 7,
-    "ownerId": 5,
-    "name": "vhjk",
+  "opd_lab1": {
+    "id": 1,
+    "ownerId": 2,
+    "name": "Linux commands",
     "coordinates": {
       "x": 79.0,
       "y": 5.0
     },
     "creationDate": "2025-03-29T12:09:39.6812286",
-    "minimalPoint": 6.0,
-    "description": "egfe",
+    "minimalPoint": 18.0,
+    "description": "chmod, rm, and other",
     "difficulty": "VERY_HARD",
     "discipline": {
-      "name": "bgfr",
-      "practiceHours": 456
+      "name": "OPD",
+      "practiceHours": 186
     }
   },
-  "AAAAAAAA": {
+  "inf_lab1": {
     "id": 10,
-    "ownerId": 6,
-    "name": "fghjk",
+    "ownerId": 3,
+    "name": "Перевод между СС",
     "coordinates": {
       "x": 789.0,
       "y": 5678.0
     },
     "creationDate": "2025-04-06T15:10:04.5985935",
     "minimalPoint": 5678.0,
-    "description": "fghjk",
-    "difficulty": "NORMAL",
+    "description": "надо много много чиселок переводить",
+    "difficulty": "VERY_EASY",
     "discipline": {
-      "name": "ghjk",
-      "practiceHours": 5678
+      "name": "inform",
+      "practiceHours": 100
     }
   },
-  "jnbbjb": {
-    "id": 6,
-    "ownerId": 7,
-    "name": "fgh",
+  "pr_lab5": {
+    "id": 5,
+    "ownerId": 1,
+    "name": "Collection Java",
     "coordinates": {
       "x": 876.0,
       "y": 77777.0
     },
     "creationDate": "2025-04-13T14:39:39.108683",
-    "minimalPoint": 7777.0,
-    "description": "fghj",
-    "difficulty": "NORMAL",
+    "minimalPoint": 10.0,
+    "description": "Создай свою коллекцию",
+    "difficulty": "VERY_HARD",
     "discipline": {
-      "name": "fgh",
-      "practiceHours": 9876543
+      "name": "proga",
+      "practiceHours": 200
     }
   },
-  "dfgh": {
-    "id": 20,
-    "ownerId": 8,
-    "name": "fghj",
+  "mat_lab1": {
+    "id": 6,
+    "ownerId": 4,
+    "name": "limits",
     "coordinates": {
       "x": 678.0,
       "y": 678.0
     },
     "creationDate": "2025-04-13T12:06:12.4045194",
-    "minimalPoint": 789.0,
-    "description": "ghj",
-    "difficulty": "NORMAL",
+    "minimalPoint": 24.0,
+    "description": "Функции, пределы и многое другое",
+    "difficulty": "IMPOSSIBLE",
     "discipline": {
-      "name": "vghj",
-      "practiceHours": 987
+      "name": "matan",
+      "practiceHours": 256
     }
   },
-  "vbhj": {
+  "бжд_lab1": {
     "id": 3,
-    "ownerId": 9,
-    "name": "bhjk",
+    "ownerId": 5,
+    "name": "ЧС",
     "coordinates": {
       "x": 678.0,
       "y": 789.0
     },
     "creationDate": "2025-04-06T14:40:23.2583989",
     "minimalPoint": 78.0,
-    "description": "fghj",
+    "description": "Опишите все чс, очень долго и нудно",
     "difficulty": "NORMAL",
     "discipline": {
-      "name": "vghj",
-      "practiceHours": 789
+      "name": "БЖД",
+      "practiceHours": 20
     }
   }
 }

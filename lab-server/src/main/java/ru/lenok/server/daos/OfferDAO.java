@@ -95,6 +95,10 @@ public class OfferDAO {
             }
             stmt.executeUpdate(createSequence);
             stmt.executeUpdate(createTable);
+            connection.commit();
+        } catch (SQLException e){
+            connection.rollback();
+            throw e;
         }
     }
 

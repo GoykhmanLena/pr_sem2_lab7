@@ -7,6 +7,8 @@ import ru.lenok.server.utils.PasswordHasher;
 
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class UserDAO {
@@ -70,18 +72,34 @@ public class UserDAO {
             stmt.executeUpdate(createSequence);
             stmt.executeUpdate(createTable);
             stmt.executeUpdate(createIndexName);
+            connection.commit();
+        } catch (SQLException e){
+            connection.rollback();
+            throw e;
         }
         printSequence();
     }
 
     private void persistInitialState(Set<Long> initialState) throws SQLException, NoSuchAlgorithmException {
         long maxId = 1L;
-        for (Long userId : initialState) {
-            User user = new User(userId, "user" + userId, "user" + userId);
-            insert(user);
-            maxId = Math.max(maxId, userId);
+        Map<Long, String> people = new HashMap<>();
+        people.put(1L, "Gavrilov");
+        people.put(2L, "Klimenkov");
+        people.put(3L, "Balakshin");
+        people.put(4L, "Holodova");
+        people.put(5L, "User5");
+        try {
+            for (Long userId : initialState) {
+                User user = new User(userId, people.get(userId), "1");
+                insert(user);
+                maxId = Math.max(maxId, userId);
+            }
+            setSequenceValue(maxId);
+            connection.commit();
+        } catch (SQLException e){
+            connection.rollback();
+            throw e;
         }
-        setSequenceValue(maxId);
         printSequence();
     }
 

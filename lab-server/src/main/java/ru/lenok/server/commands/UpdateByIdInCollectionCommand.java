@@ -26,7 +26,7 @@ public class UpdateByIdInCollectionCommand extends AbstractCommand {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("id имеет формат Long, попробуйте ввести еще раз");
         }
-        labWorkService.updateByLabWorkId(id, element);
+        labWorkService.updateByLabWorkId(id, element, true);
         return new CommandResponse(EMPTY_RESULT);
     }
 

@@ -19,6 +19,7 @@ public class DBConnector {
         String url = String.format("jdbc:postgresql://%s:%s/studs?currentSchema=%s", dbHost, dbPort, dbSchema);
 
         connection = DriverManager.getConnection(url, dbUser, dbPassword);
+        connection.setAutoCommit(false);
         logger.info("Подключение к PostgreSQL успешно!");
     }
 

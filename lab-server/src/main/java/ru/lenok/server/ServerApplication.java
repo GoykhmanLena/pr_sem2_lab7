@@ -23,8 +23,7 @@ import java.net.DatagramSocket;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 
 public class ServerApplication implements IHistoryProvider {
 
@@ -51,11 +50,22 @@ public class ServerApplication implements IHistoryProvider {
     }
 
     public void start() {
+        ForkJoinPool listeningPool = new ForkJoinPool();
+        ForkJoinPool processingPool = new ForkJoinPool();
+        ExecutorService sendingExecutor = Executors.newFixedThreadPool(4);
+
+
         logger.info("Сервер работает");
             try {
-                serverConListener.run();
-                requestHandlerThread.start();
-                serverResponseSenderThread.start();
+                while (true){
+                    IncomingMessage incomingMessage = serverConListener.listenAndReceiveMessage();
+                    CompletableFuture
+                            .supplyAsync(
+                                    () ->
+                                    reqHandler.handleIncomingMessage(incomingMessage), processingPool)
+                            .thenAcceptAsync(response ->
+                                    serverRespSender.sendMessageToClient(response.getResponse(), response.getClientIp(), response.getClientPort()), sendingExecutor);
+                            }
             } catch (Exception e) {
                 logger.error("Ошибка, ", e);
             }
@@ -74,13 +84,11 @@ public class ServerApplication implements IHistoryProvider {
             this.commandRegistry = new CommandRegistry(labWorkService, productService, offerService, this);
 
             reqHandler =  new RequestHandler(commandRegistry, userService, responseQueue, incomingMessageQueue);
-            requestHandlerThread = new Thread(reqHandler);
 
             serverConListener = new ServerConnectionListener(port, incomingMessageQueue);
            // serverConnectionListenerThread = new Thread(serverConListener);
 
             serverRespSender = new ServerResponseSender(serverConListener.getSocket(), responseQueue);
-            serverResponseSenderThread = new Thread(serverRespSender);
             handleSaveOnTerminate();
         } catch (Exception e) {
             logger.error("Ошибка, ", e);
@@ -140,10 +148,10 @@ public class ServerApplication implements IHistoryProvider {
             ProductDAO productDAO = new ProductDAO(userIdsFromLabWorks, dbConnector, reinitDB);
             LabWorkDAO labWorkDAO = new LabWorkDAO(initialState, dbConnector, reinitDB);
             OfferDAO offerDAO = new OfferDAO(dbConnector, reinitDB);
-            userService = new UserService(userDAO);
-            labWorkService = new LabWorkService(labWorkDAO);
-            productService = new ProductService(productDAO);
-            offerService = new OfferService(labWorkDAO, productDAO, offerDAO, labWorkService);
+            userService = new UserService(userDAO, dbConnector);
+            labWorkService = new LabWorkService(labWorkDAO, dbConnector);
+            productService = new ProductService(productDAO, dbConnector);
+            offerService = new OfferService(labWorkDAO, productDAO, offerDAO, labWorkService, dbConnector);
         } catch (SQLException | NoSuchAlgorithmException e) {
             logger.error("Ошибка при инициализации сервисов: {} {}", e.getMessage());
             e.printStackTrace();

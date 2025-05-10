@@ -12,25 +12,31 @@ import java.util.stream.Collectors;
 //@Data
 public class MemoryStorage {
     private final Hashtable<String, LabWork> map;
+    private final Object monitor;
 
     public MemoryStorage(Hashtable<String, LabWork> map) {
         this.map = map;
+        monitor = this.map;
     }
 
-    public synchronized void put(String key, LabWork lab) {
+    public Object getMonitor(){
+        return monitor;
+    }
+
+    public void put(String key, LabWork lab) {
         map.put(key, lab);
     }
 
-    public synchronized void remove(String key) {
+    public void remove(String key) {
         map.remove(key);
     }
 
-    public synchronized int length() {
+    public int length() {
         return map.size();
     }
 
     @Override
-    public synchronized String toString() {
+    public String toString() {
         StringBuilder result = new StringBuilder();
         for (String key : map.keySet()) {
             LabWork labWork = map.get(key);
@@ -39,14 +45,14 @@ public class MemoryStorage {
         return result.toString();
     }
 
-    public synchronized void clear() {
+    public void clear() {
         map.clear();
     }
-    public synchronized String getCollectionAsString(){
+    public String getCollectionAsString(){
         return sortMapAndStringify(this.map);
     }
 
-    public synchronized String sortMapAndStringify(Map<String, LabWork> filteredMap) {
+    public String sortMapAndStringify(Map<String, LabWork> filteredMap) {
         return filteredMap.entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByValue()) // сортировка по значению
@@ -54,11 +60,11 @@ public class MemoryStorage {
                 .collect(Collectors.joining("\n"));
     }
 
-    public synchronized boolean containsKey(String key){
+    public boolean containsKey(String key){
         return map.containsKey(key);
     }
 
-    public synchronized String filterWithDescription(String descript_part){
+    public String filterWithDescription(String descript_part){
         return map.entrySet().stream()
                 .filter(entry -> entry.getValue().getDescription().contains(descript_part))
                 .sorted(Map.Entry.comparingByValue())
@@ -66,7 +72,7 @@ public class MemoryStorage {
                 .collect(Collectors.joining("\n"));
     }
 
-    public synchronized String filterWithName(String name_part){
+    public String filterWithName(String name_part){
         return map.entrySet().stream()
                 .filter(entry -> entry.getValue().getName().startsWith(name_part))
                 .sorted(Map.Entry.comparingByValue())
@@ -74,7 +80,7 @@ public class MemoryStorage {
                 .collect(Collectors.joining("\n"));
     }
 
-    public synchronized List<String> keysOfGreater(LabWork elem, long userId){
+    public List<String> keysOfGreater(LabWork elem, long userId){
         return map.entrySet().stream()
                 .filter(entry -> entry.getValue().getOwnerId().equals(userId))
                 .filter(entry -> entry.getValue().compareTo(elem) > 0)
@@ -82,14 +88,14 @@ public class MemoryStorage {
                 .collect(Collectors.toList());
     }
 
-    public synchronized boolean comparing(String key, LabWork newLabWork){
+    public boolean comparing(String key, LabWork newLabWork){
         return map.get(key).compareTo(newLabWork) < 0;
     }
-    public synchronized Long getId(String key){
+    public Long getId(String key){
         return map.get(key).getId();
     }
 
-    public synchronized String getKeyByLabWorkId(Long id) {
+    public String getKeyByLabWorkId(Long id) {
         return map.entrySet().stream()
                 .filter(entry -> entry.getValue().getId().equals(id))
                 .map(Map.Entry::getKey)
@@ -97,7 +103,7 @@ public class MemoryStorage {
                 .orElseThrow(() -> new IllegalArgumentException("Нет элемента с таким id"));
     }
 
-    public synchronized LabWork getLabWorkById(Long id) {
+    public LabWork getLabWorkById(Long id) {
         return map.entrySet().stream()
                 .filter(entry -> entry.getValue().getId().equals(id))
                 .map(Map.Entry::getValue)
@@ -105,7 +111,7 @@ public class MemoryStorage {
                 .orElseThrow(() -> new IllegalArgumentException("Нет элемента с таким id"));
     }
 
-    public synchronized void checkAccess(Long currentUserId, String key){
+    public void checkAccess(Long currentUserId, String key){
         LabWork labWork = map.get(key);
         if (labWork != null){
             if (!labWork.getOwnerId().equals(currentUserId)){
@@ -114,7 +120,7 @@ public class MemoryStorage {
         }
     }
 
-    public synchronized void deleteForUser(long ownerId){
+    public void deleteForUser(long ownerId){
         Iterator<Map.Entry<String, LabWork>> iterator = map.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, LabWork> entry = iterator.next();

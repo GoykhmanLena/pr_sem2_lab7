@@ -34,7 +34,7 @@ public class ClientApplication {
             ClientInputProcessor inputProcessor = new ClientInputProcessor(commandDefinitions, clientConnector, user);
             inputProcessor.processInput(input, true);
         } catch (Exception e) {
-            logger.error("Ошибка: ", e);
+            logger.error("Ошибка: " + e.getMessage());
         }
     }
 }

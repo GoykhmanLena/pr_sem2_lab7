@@ -21,13 +21,12 @@ import ru.lenok.server.utils.HistoryList;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
 
 import static ru.lenok.common.commands.ArgType.LONG;
 import static ru.lenok.server.commands.CommandName.exit;
 import static ru.lenok.server.commands.CommandName.save;
 
-public class RequestHandler implements IHistoryProvider, Runnable {
+public class RequestHandler implements IHistoryProvider {
     private static final int THREAD_COUNT = 5;
     private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
     private final CommandController commandController;
@@ -37,8 +36,6 @@ public class RequestHandler implements IHistoryProvider, Runnable {
     private final UserService userService;
     private final BlockingQueue<ResponseWithClient> responseQueue;
     private final BlockingQueue<IncomingMessage> incomingMessageQueue;
-    ForkJoinPool pool;
-
     public CommandController getCommandController() {
         return commandController;
     }
@@ -51,31 +48,18 @@ public class RequestHandler implements IHistoryProvider, Runnable {
         this.responseQueue = responseQueue;
         this.incomingMessageQueue = incomingMessageQueue;
     }
-    public void run(){
-        logger.info("Запущен RequestHandler");
-        int parallelism = Runtime.getRuntime().availableProcessors();
-        pool = new ForkJoinPool(parallelism);
 
-        while (true){
-            try {
-                IncomingMessage message = incomingMessageQueue.take();
-                pool.execute(() -> {
-                    Object response = onReceive(message.getMessage());
-                    responseQueue.add(new ResponseWithClient(response, message.getClientIp(), message.getClientPort()));
-                });
-            } catch (InterruptedException e) {
-                pool.shutdown();
-                Thread.currentThread().interrupt();
-            }
-        }
+    public ResponseWithClient handleIncomingMessage(IncomingMessage message) {
+        Object response = onReceive(message.getMessage());
+        return new ResponseWithClient(response, message.getClientIp(), message.getClientPort());
     }
 
-    public Object onReceive(Object inputData){
+    public Object onReceive(Object inputData) {
         logger.info("Обрабатываю сообщение: " + inputData);
         if (inputData instanceof CommandRequest) {
             CommandRequest commandRequest = (CommandRequest) inputData;
             CommandResponse validateResponse = validateCommandRequest(commandRequest);
-            if (validateResponse != null){
+            if (validateResponse != null) {
                 return validateResponse;
             }
             String commandNameStr = commandRequest.getCommandWithArgument().getCommandName();
@@ -85,7 +69,7 @@ public class RequestHandler implements IHistoryProvider, Runnable {
             try {
                 userFromDb = userService.login(user);
                 commandRequest.setUser(userFromDb);
-            } catch (Exception e){
+            } catch (Exception e) {
                 return new LoginResponse(e, null, -1);
             }
             HistoryList historyList = historyByClients.get(userFromDb.getId());
@@ -98,18 +82,18 @@ public class RequestHandler implements IHistoryProvider, Runnable {
         } else if (inputData instanceof LoginRequest) {
             LoginRequest loginRequest = (LoginRequest) inputData;
             LoginResponse loginResponse = null;
-            if (loginRequest.isRegister()){
+            if (loginRequest.isRegister()) {
                 loginResponse = userController.register(loginRequest.getUser());
-            }
-            else{
+            } else {
                 loginResponse = userController.login(loginRequest.getUser());
             }
-            if (loginResponse.getError() == null){
+            if (loginResponse.getError() == null) {
                 historyByClients.put(loginResponse.getUserId(), new HistoryList());
             }
             return loginResponse;
         }
-        return errorResponse("Вы передали какую-то чепуху: ", inputData);    }
+        return errorResponse("Вы передали какую-то чепуху: ", inputData);
+    }
 
     private static CommandResponse errorResponse(String message, Object inputData) {
         return new CommandResponse(new IllegalArgumentException(message + inputData));
@@ -123,21 +107,20 @@ public class RequestHandler implements IHistoryProvider, Runnable {
     private CommandResponse validateCommandRequest(CommandRequest commandRequest) {
         LabWork element = commandRequest.getElement();
         CommandWithArgument commandWithArgument = commandRequest.getCommandWithArgument();
-        if (commandWithArgument == null){
+        if (commandWithArgument == null) {
             return errorResponse("Неверный формат запроса: ", commandRequest);
         }
         String commandNameStr = commandWithArgument.getCommandName();
-        if (commandNameStr == null){
+        if (commandNameStr == null) {
             return errorResponse("Неверный формат запроса: ", commandRequest);
         }
         CommandName commandName;
         try {
             commandName = CommandName.valueOf(commandNameStr);
-        }
-        catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             return errorResponse("Такой команды не существует: ", commandRequest);
         }
-        if (commandName == save || commandName == exit){
+        if (commandName == save || commandName == exit) {
             return errorResponse("Вы МОШЕННИК: эта команда на сервере не разрешена: ", commandRequest);
         }
         CommandBehavior commandBehavior = commandName.getBehavior();
@@ -146,10 +129,10 @@ public class RequestHandler implements IHistoryProvider, Runnable {
             if (argument1 == null || argument1.isEmpty()) {
                 return errorResponse("Ожидался аргумент, ничего не пришло: ", commandRequest);
             }
-            if (commandBehavior.getArgType1() == LONG){
+            if (commandBehavior.getArgType1() == LONG) {
                 try {
                     Long.parseLong(argument1);
-                } catch (NumberFormatException e){
+                } catch (NumberFormatException e) {
                     return errorResponse("Ожидался аргумент типа Long, пришло: ", commandRequest);
                 }
             }
@@ -159,10 +142,10 @@ public class RequestHandler implements IHistoryProvider, Runnable {
             if (argument2 == null || argument2.isEmpty()) {
                 return errorResponse("Ожидалось 2 аргумента, второй аргумент пустой: ", commandRequest);
             }
-            if (commandBehavior.getArgType2() == LONG){
+            if (commandBehavior.getArgType2() == LONG) {
                 try {
                     Long.parseLong(argument2);
-                } catch (NumberFormatException e){
+                } catch (NumberFormatException e) {
                     return errorResponse("Ожидался 2й аргумент типа Long, пришло: ", commandRequest);
                 }
             }

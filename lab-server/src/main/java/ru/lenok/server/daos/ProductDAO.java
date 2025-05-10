@@ -1,13 +1,11 @@
 package ru.lenok.server.daos;
 
 import ru.lenok.common.Product;
-import ru.lenok.common.auth.User;
-import ru.lenok.common.models.LabWork;
-import ru.lenok.server.utils.PasswordHasher;
 
-import java.security.NoSuchAlgorithmException;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class ProductDAO {
     private Connection connection;
@@ -30,6 +28,7 @@ public class ProductDAO {
             name = ?
             WHERE id = ?
             """;
+
     public ProductDAO(Set<Long> userIds, DBConnector dbConnector, boolean dbReinit) throws SQLException {
         connection = dbConnector.getConnection();
         init(userIds, dbReinit);
@@ -41,6 +40,7 @@ public class ProductDAO {
             persistInitialState(userIds);
         }
     }
+
     private void initScheme(boolean reinitDB) throws SQLException {
 
         String dropALL =
@@ -64,14 +64,24 @@ public class ProductDAO {
             stmt.executeUpdate(createSequence);
             stmt.executeUpdate(createTable);
             stmt.executeUpdate(createIndexName);
+            connection.commit();
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
         }
     }
-    private void persistInitialState(Set<Long> userIds) throws SQLException {
-        for (Long userId : userIds) {
-            Product product = new Product("flat " + userId, userId, null);
-            insert(product);
-        }
 
+    private void persistInitialState(Set<Long> userIds) throws SQLException {
+        try {
+            for (Long userId : userIds) {
+                Product product = new Product("flat " + userId, userId, null);
+                insert(product);
+            }
+            connection.commit();
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        }
     }
 
     public Product insert(Product product) throws SQLException {
@@ -92,15 +102,15 @@ public class ProductDAO {
         }
     }
 
-    public List<Product> getUserProducts(Long userId) throws SQLException{
+    public List<Product> getUserProducts(Long userId) throws SQLException {
         List<Product> userProducts = new ArrayList<>();
 
-        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_OWNER)){
+        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_OWNER)) {
 
             pstmt.setLong(1, userId);
 
-            try(ResultSet resultSet = pstmt.executeQuery()){
-                while (resultSet.next()){
+            try (ResultSet resultSet = pstmt.executeQuery()) {
+                while (resultSet.next()) {
                     long productId = resultSet.getLong(1);
                     String productName = resultSet.getString(2);
                     long ownerId = resultSet.getLong(3);
@@ -115,12 +125,12 @@ public class ProductDAO {
 
     public Product getProductById(Long productId) throws SQLException {
 
-        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_ID)){
+        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_ID)) {
 
             pstmt.setLong(1, productId);
 
-            try(ResultSet resultSet = pstmt.executeQuery()){
-                if (resultSet.next()){
+            try (ResultSet resultSet = pstmt.executeQuery()) {
+                if (resultSet.next()) {
                     String productName = resultSet.getString(2);
                     long ownerId = resultSet.getLong(3);
 
