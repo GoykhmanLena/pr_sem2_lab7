@@ -11,75 +11,9 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
+import static ru.lenok.server.daos.SQLQueries.*;
+
 public class LabWorkDAO extends AbstractDAO {
-    private static final String DELETE_FOR_USER = "DELETE FROM lab_work WHERE owner_id = ?";
-    private static final String DELETE_BY_KEYS = "DELETE FROM lab_work WHERE key = ANY (?)";
-    private static final String DELETE_LAB_WORK = "DELETE FROM lab_work WHERE key = ?";
-
-    static String DROP_ALL =
-            "DROP INDEX IF EXISTS idx_labwork_name;\n" +
-                    "DROP INDEX IF EXISTS idx_labwork_unique_key;\n" +
-                    "DROP TABLE IF EXISTS lab_work;\n" +
-                    "DROP SEQUENCE IF EXISTS lab_work_seq;" +
-                    "DROP TYPE IF EXISTS DIFFICULTY;";
-
-    private static final String UPDATE_LAB_WORK = """
-            UPDATE lab_work
-            SET
-                key = ?,
-                name = ?,
-                coord_x = ?,
-                coord_y = ?,
-                creation_date = ?,
-                minimal_point = ?,
-                description = ?,
-                difficulty = ?,
-                discipline_name = ?,
-                discipline_practice_hours = ?,
-                owner_id = ?
-            WHERE id = ?
-            """;
-    private static final String CREATE_LAB_WORK = """
-                INSERT INTO lab_work (
-                    key,
-                    name,
-                    coord_x,
-                    coord_y,
-                    creation_date,
-                    minimal_point,
-                    description,
-                    difficulty,
-                    discipline_name,
-                    discipline_practice_hours,
-                    owner_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                RETURNING id
-            """;
-
-    private static final String CREATE_LAB_WORK_WITH_ID = """
-                INSERT INTO lab_work (
-                    key,
-                    name,
-                    coord_x,
-                    coord_y,
-                    creation_date,
-                    minimal_point,
-                    description,
-                    difficulty,
-                    discipline_name,
-                    discipline_practice_hours,
-                    owner_id,
-                    id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                RETURNING id
-            """;
-
-    private static final String SELECT_ALL = """
-            SELECT *
-            FROM lab_work
-            ORDER BY name
-            """;
-
     private static final Logger logger = LoggerFactory.getLogger(LabWorkDAO.class);
 
     public LabWorkDAO(Hashtable<String, LabWork> initialState, DBConnector dbConnector, boolean dbReinit) throws SQLException {
@@ -105,37 +39,19 @@ public class LabWorkDAO extends AbstractDAO {
     }
 
     private void initScheme(boolean reinitDB) throws SQLException {
-        String createSequence = "CREATE SEQUENCE IF NOT EXISTS lab_work_seq START 1;";
-
-        String createTable = "CREATE TABLE IF NOT EXISTS lab_work (\n" +
-                "                       id BIGINT DEFAULT nextval('lab_work_seq') PRIMARY KEY,\n" +
-                "                       key VARCHAR(256) NOT NULL,\n" +
-                "                       name VARCHAR(256) NOT NULL,\n" +
-                "                       coord_x DOUBLE PRECISION NOT NULL,\n" +
-                "                       coord_y REAL NOT NULL,\n" +
-                "                       creation_date TIMESTAMP NOT NULL,\n" +
-                "                       minimal_point DOUBLE PRECISION NOT NULL,\n" +
-                "                       description VARCHAR(2863) NOT NULL,\n" +
-                "                       difficulty VARCHAR(256) NOT NULL,\n" +
-                "                       discipline_name VARCHAR(256),\n" +
-                "                       discipline_practice_hours BIGINT NOT NULL,\n" +
-                "                       owner_id BIGINT REFERENCES users(id)" +
-                ");";
-        String createIndexName = "CREATE INDEX IF NOT EXISTS idx_labwork_name ON lab_work (name);";
-        String createIndexKey = "CREATE UNIQUE INDEX IF NOT EXISTS idx_labwork_unique_key ON lab_work (key);";
         try (Connection connection = ds.getConnection(); Statement stmt = connection.createStatement()) {
             if (reinitDB) {
-                stmt.executeUpdate(DROP_ALL);
+                stmt.executeUpdate(DROP_ALL_LABWORK.t());
             }
-            stmt.executeUpdate(createSequence);
-            stmt.executeUpdate(createTable);
-            stmt.executeUpdate(createIndexName);
-            stmt.executeUpdate(createIndexKey);
+            stmt.executeUpdate(CREATE_SEQUENCE_LABWORK.t());
+            stmt.executeUpdate(CREATE_TABLE_LABWORK.t());
+            stmt.executeUpdate(CREATE_NAME_INDEX_LABWORK.t());
+            stmt.executeUpdate(CREATE_KEY_INDEX_LABWORK.t());
         }
     }
 
     public Long insert(String key, LabWork labWork) throws SQLException {
-        String sql = labWork.getId() != null ? CREATE_LAB_WORK_WITH_ID : CREATE_LAB_WORK;
+        String sql = labWork.getId() != null ? CREATE_LAB_WORK_WITH_ID.t() : CREATE_LAB_WORK.t();
         try (Connection connection = ds.getConnection();
              PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, key);
@@ -167,7 +83,7 @@ public class LabWorkDAO extends AbstractDAO {
     }
 
     public void updateById(String key, LabWork labWork, Connection connection) throws SQLException {
-        try (PreparedStatement pstmt = connection.prepareStatement(UPDATE_LAB_WORK)) {
+        try (PreparedStatement pstmt = connection.prepareStatement(UPDATE_LAB_WORK.t())) {
             pstmt.setString(1, key);
             pstmt.setString(2, labWork.getName());
             pstmt.setDouble(3, labWork.getCoordinates().getX());
@@ -185,7 +101,7 @@ public class LabWorkDAO extends AbstractDAO {
     }
 
     public void delete(String key) throws SQLException {
-        try (Connection connection = ds.getConnection(); PreparedStatement pstmt = connection.prepareStatement(DELETE_LAB_WORK)) {
+        try (Connection connection = ds.getConnection(); PreparedStatement pstmt = connection.prepareStatement(DELETE_LABWORK.t())) {
             pstmt.setString(1, key);
             pstmt.executeUpdate();
         }
@@ -193,7 +109,7 @@ public class LabWorkDAO extends AbstractDAO {
 
     public void deleteForUser(long ownerId) throws SQLException {
         try (Connection connection = ds.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(DELETE_FOR_USER)) {
+             PreparedStatement pstmt = connection.prepareStatement(DELETE_FOR_USER_LABWORK.t())) {
             pstmt.setLong(1, ownerId);
             pstmt.executeUpdate();
         }
@@ -203,7 +119,7 @@ public class LabWorkDAO extends AbstractDAO {
     public Map<String, LabWork> selectAll() throws SQLException {
         HashMap<String, LabWork> result = new HashMap<>();
         try (Connection connection = ds.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(SELECT_ALL);
+             PreparedStatement pstmt = connection.prepareStatement(SELECT_ALL.t());
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
                 LabWork.Builder builder = new LabWork.Builder();
@@ -228,7 +144,7 @@ public class LabWorkDAO extends AbstractDAO {
     }
 
     public void deleteByKeys(List<String> keysForRemoving) throws SQLException {
-        try (Connection connection = ds.getConnection(); PreparedStatement pstmt = connection.prepareStatement(DELETE_BY_KEYS)) {
+        try (Connection connection = ds.getConnection(); PreparedStatement pstmt = connection.prepareStatement(DELETE_BY_KEYS_LABWORK.t())) {
             Array keyArray = connection.createArrayOf("varchar", keysForRemoving.toArray());
             pstmt.setArray(1, keyArray);
 

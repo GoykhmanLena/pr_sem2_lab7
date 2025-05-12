@@ -11,25 +11,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static ru.lenok.server.daos.SQLQueries.*;
+
 public class UserDAO extends AbstractDAO {
     private static final Logger logger = LoggerFactory.getLogger(UserDAO.class);
-    private static final String CREATE_USER = """
-                INSERT INTO users (
-                    name,
-                    pw_hash
-                ) VALUES (?, ?)
-                RETURNING id
-            """;
-
-    private static final String CREATE_USER_WITH_ID = """
-                INSERT INTO users (
-                    name,
-                    pw_hash,
-                    id
-                ) VALUES (?, ?, ?)
-                RETURNING id
-            """;
-
     public UserDAO(Set<Long> initialState, DBConnector dbConnector, boolean reinitDB) throws SQLException, NoSuchAlgorithmException {
         super(dbConnector.getDatasource());
         init(initialState, reinitDB);
@@ -43,28 +28,14 @@ public class UserDAO extends AbstractDAO {
     }
 
     private void initScheme(boolean reinitDB) throws SQLException {
-        String dropALL =
-                "DROP INDEX IF EXISTS idx_user_name;\n" +
-                        "DROP TABLE IF EXISTS users;\n" +
-                        "DROP SEQUENCE IF EXISTS user_seq;";
-
-        String createSequence = "CREATE SEQUENCE IF NOT EXISTS user_seq START 1;";
-
-        String createTable = "CREATE TABLE IF NOT EXISTS users (\n" +
-                "                       id BIGINT DEFAULT nextval('user_seq') PRIMARY KEY,\n" +
-                "                       name VARCHAR(256) NOT NULL UNIQUE,\n" +
-                "                       pw_hash VARCHAR(256) NOT NULL\n" +
-                ");";
-        String createIndexName = "CREATE INDEX IF NOT EXISTS idx_user_name ON users (name);";
-
         try (Connection connection = ds.getConnection(); Statement stmt = connection.createStatement()) {
             if (reinitDB) {
-                stmt.executeUpdate(LabWorkDAO.DROP_ALL);
-                stmt.executeUpdate(dropALL);
+                stmt.executeUpdate(DROP_ALL_LABWORK.t());
+                stmt.executeUpdate(DROP_ALL_USERS.t());
             }
-            stmt.executeUpdate(createSequence);
-            stmt.executeUpdate(createTable);
-            stmt.executeUpdate(createIndexName);
+            stmt.executeUpdate(CREATE_SEQUENCE_USER.t());
+            stmt.executeUpdate(CREATE_TABLE_USER.t());
+            stmt.executeUpdate(CREATE_INDEX_USER.t());
         }
         printSequence("user_seq");
     }
@@ -87,7 +58,7 @@ public class UserDAO extends AbstractDAO {
     }
 
     public User insert(User user) throws SQLException, NoSuchAlgorithmException {
-        String sql = user.getId() != null ? CREATE_USER_WITH_ID : CREATE_USER;
+        String sql = user.getId() != null ? CREATE_USER_WITH_ID.t() : CREATE_USER.t();
         try (Connection connection = ds.getConnection();
              PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, user.getUsername());
@@ -111,9 +82,8 @@ public class UserDAO extends AbstractDAO {
     }
 
     public User getUserByName(String name) throws SQLException {
-        String query = "SELECT id, name, pw_hash FROM users WHERE name = ?";
         try (Connection connection = ds.getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement(query)) {
+            try (PreparedStatement statement = connection.prepareStatement(GET_USER_BY_NAME.t())) {
                 statement.setString(1, name);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     if (resultSet.next()) {

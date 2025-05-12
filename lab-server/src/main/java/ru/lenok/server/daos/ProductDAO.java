@@ -7,27 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class ProductDAO extends AbstractDAO {
-    private static final String CREATE_PRODUCT = """
-                INSERT INTO product (
-                    name,
-                    owner_id
-                ) VALUES (?, ?)
-                RETURNING id
-            """;
-    private static final String SELECT_PRODUCTS_BY_OWNER = """
-            SELECT * FROM product WHERE owner_id = ?
-            """;
-    private static final String SELECT_PRODUCTS_BY_ID = """
-            SELECT * FROM product WHERE id = ?
-            """;
-    private static final String UPDATE_PRODUCT = """
-            UPDATE product
-            SET owner_id = ?,
-            name = ?
-            WHERE id = ?
-            """;
+import static ru.lenok.server.daos.SQLQueries.*;
 
+public class ProductDAO extends AbstractDAO {
     public ProductDAO(Set<Long> userIds, DBConnector dbConnector, boolean dbReinit) throws SQLException {
         super(dbConnector.getDatasource());
         init(userIds, dbReinit);
@@ -41,26 +23,13 @@ public class ProductDAO extends AbstractDAO {
     }
 
     private void initScheme(boolean reinitDB) throws SQLException {
-        String dropALL =
-                "DROP INDEX IF EXISTS idx_product_name;\n" +
-                        "DROP TABLE IF EXISTS product;\n" +
-                        "DROP SEQUENCE IF EXISTS product_seq;";
-
-        String createSequence = "CREATE SEQUENCE IF NOT EXISTS product_seq START 1;";
-
-        String createTable = "CREATE TABLE IF NOT EXISTS product (\n" +
-                "                       id BIGINT DEFAULT nextval('product_seq') PRIMARY KEY,\n" +
-                "                       name VARCHAR(256) NOT NULL,\n" +
-                "                       owner_id BIGINT NOT NULL\n" +
-                ");";
-        String createIndexName = "CREATE INDEX IF NOT EXISTS idx_product_name ON product (name);";
         try (Connection connection = ds.getConnection(); Statement stmt = connection.createStatement()) {
             if (reinitDB) {
-                stmt.executeUpdate(dropALL);
+                stmt.executeUpdate(DROP_ALL_PRODUCT.t());
             }
-            stmt.executeUpdate(createSequence);
-            stmt.executeUpdate(createTable);
-            stmt.executeUpdate(createIndexName);
+            stmt.executeUpdate(CREATE_SEQUENCE_PRODUCT.t());
+            stmt.executeUpdate(CREATE_TABLE_PRODUCT.t());
+            stmt.executeUpdate(CREATE_INDEX_PRODUCT.t());
         }
     }
 
@@ -73,7 +42,7 @@ public class ProductDAO extends AbstractDAO {
 
     public Product insert(Product product) throws SQLException {
         try (Connection connection = ds.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(CREATE_PRODUCT)) {
+             PreparedStatement pstmt = connection.prepareStatement(CREATE_PRODUCT.t())) {
             pstmt.setString(1, product.getName());
             pstmt.setLong(2, product.getOwnerId());
 
@@ -92,7 +61,7 @@ public class ProductDAO extends AbstractDAO {
     public List<Product> getUserProducts(Long userId) throws SQLException {
         List<Product> userProducts = new ArrayList<>();
         try (Connection connection = ds.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_OWNER)) {
+             PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_OWNER.t())) {
             pstmt.setLong(1, userId);
 
             try (ResultSet resultSet = pstmt.executeQuery()) {
@@ -111,7 +80,7 @@ public class ProductDAO extends AbstractDAO {
 
     public Product getProductById(Long productId) throws SQLException {
         try (Connection connection = ds.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_ID)) {
+             PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_ID.t())) {
             pstmt.setLong(1, productId);
             try (ResultSet resultSet = pstmt.executeQuery()) {
                 if (resultSet.next()) {
@@ -128,7 +97,7 @@ public class ProductDAO extends AbstractDAO {
 
     public void updateProduct(Product product) throws SQLException {
         try (Connection connection = ds.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(UPDATE_PRODUCT)) {
+             PreparedStatement pstmt = connection.prepareStatement(UPDATE_PRODUCT.t())) {
 
             pstmt.setLong(1, product.getOwnerId());
             pstmt.setString(2, product.getName());
