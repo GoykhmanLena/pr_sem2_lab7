@@ -3,31 +3,26 @@ package ru.lenok.server.connectivity;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.lenok.common.util.SerializationUtils;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import ru.lenok.common.util.SerializationUtils;
-import ru.lenok.server.request_processing.RequestHandler;
 
 @Data
 public class ServerResponseSender{
     private static final Logger logger = LoggerFactory.getLogger(ServerResponseSender.class);
     private final SerializationUtils serializer = SerializationUtils.INSTANCE;
     private final DatagramSocket socket;
-    private final BlockingQueue<ResponseWithClient> responseQueue;
     private final static int THREAD_COUNT = 5;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_COUNT);
 
-    public ServerResponseSender(DatagramSocket datagramSocket, BlockingQueue<ResponseWithClient> responseQueue) {
+    public ServerResponseSender(DatagramSocket datagramSocket) {
         this.socket = datagramSocket;
-        this.responseQueue = responseQueue;
     }
 
     public void sendMessageToClient(Object response, InetAddress clientIp, int clientPort) {

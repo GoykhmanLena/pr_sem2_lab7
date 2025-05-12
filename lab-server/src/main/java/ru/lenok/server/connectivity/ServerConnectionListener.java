@@ -8,7 +8,6 @@ import ru.lenok.common.util.SerializationUtils;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ForkJoinPool;
 
 @Data
@@ -19,14 +18,12 @@ public class ServerConnectionListener{
     private final int port;
     private final DatagramSocket socket;
     private final ForkJoinPool pool = new ForkJoinPool();
-    private final BlockingQueue<IncomingMessage> messageQueue;
     private ForkJoinPool forkJoinPool;
 
 
-    public ServerConnectionListener(int port, BlockingQueue<IncomingMessage> messageQueue) throws Exception {
+    public ServerConnectionListener(int port) throws Exception {
         this.port = port;
         this.socket = new DatagramSocket(port);
-        this.messageQueue = messageQueue;
         logger.info("UDP сервер запущен на порту " + port);
     }
 

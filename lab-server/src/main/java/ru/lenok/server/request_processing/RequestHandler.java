@@ -19,7 +19,6 @@ import ru.lenok.server.services.UserService;
 import ru.lenok.server.utils.HistoryList;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static ru.lenok.common.commands.ArgType.LONG;
@@ -34,19 +33,15 @@ public class RequestHandler implements IHistoryProvider {
     private final UserController userController;
     private Map<Long, HistoryList> historyByClients = new ConcurrentHashMap();
     private final UserService userService;
-    private final BlockingQueue<ResponseWithClient> responseQueue;
-    private final BlockingQueue<IncomingMessage> incomingMessageQueue;
     public CommandController getCommandController() {
         return commandController;
     }
 
-    public RequestHandler(CommandRegistry commandRegistry, UserService userService, BlockingQueue<ResponseWithClient> responseQueue, BlockingQueue<IncomingMessage> incomingMessageQueue) {
+    public RequestHandler(CommandRegistry commandRegistry, UserService userService) {
         this.userService = userService;
         this.commandRegistry = commandRegistry;
         this.commandController = new CommandController(commandRegistry);
         this.userController = new UserController(userService, commandRegistry.getClientCommandDefinitions());
-        this.responseQueue = responseQueue;
-        this.incomingMessageQueue = incomingMessageQueue;
     }
 
     public ResponseWithClient handleIncomingMessage(IncomingMessage message) {
@@ -70,7 +65,7 @@ public class RequestHandler implements IHistoryProvider {
                 userFromDb = userService.login(user);
                 commandRequest.setUser(userFromDb);
             } catch (Exception e) {
-                return new LoginResponse(e, null, -1);
+                return new CommandResponse(e);
             }
             HistoryList historyList = historyByClients.get(userFromDb.getId());
             if (historyList == null) {

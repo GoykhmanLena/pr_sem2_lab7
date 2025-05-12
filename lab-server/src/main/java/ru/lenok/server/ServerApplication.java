@@ -30,17 +30,12 @@ public class ServerApplication implements IHistoryProvider {
     private static final Logger logger = LoggerFactory.getLogger(ServerApplication.class);
     private LabWorkService labWorkService;
     private CommandRegistry commandRegistry;
-    private Thread requestHandlerThread;
     private RequestHandler reqHandler;
     private int port;
     private final Properties properties;
-    private Thread serverConnectionListenerThread;
     private ServerConnectionListener serverConListener;
-    private Thread serverResponseSenderThread;
     private ServerResponseSender serverRespSender;
     private UserService userService;
-    private final BlockingQueue<IncomingMessage> incomingMessageQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<ResponseWithClient> responseQueue = new LinkedBlockingQueue<>();
     private ProductService productService;
     private OfferService offerService;
 
@@ -83,12 +78,11 @@ public class ServerApplication implements IHistoryProvider {
             initServices();
             this.commandRegistry = new CommandRegistry(labWorkService, productService, offerService, this);
 
-            reqHandler =  new RequestHandler(commandRegistry, userService, responseQueue, incomingMessageQueue);
+            reqHandler =  new RequestHandler(commandRegistry, userService);
 
-            serverConListener = new ServerConnectionListener(port, incomingMessageQueue);
-           // serverConnectionListenerThread = new Thread(serverConListener);
+            serverConListener = new ServerConnectionListener(port);
 
-            serverRespSender = new ServerResponseSender(serverConListener.getSocket(), responseQueue);
+            serverRespSender = new ServerResponseSender(serverConListener.getSocket());
             handleSaveOnTerminate();
         } catch (Exception e) {
             logger.error("Ошибка, ", e);

@@ -5,6 +5,7 @@ import ru.lenok.common.models.LabWork;
 import ru.lenok.server.daos.DBConnector;
 import ru.lenok.server.daos.LabWorkDAO;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Hashtable;
@@ -15,13 +16,13 @@ public class LabWorkService {
     private MemoryStorage memoryStorage;
     private final LabWorkDAO labWorkDAO;
     private final Object monitor;
-    private final Connection connection;
+    private final DataSource ds;
 
     public LabWorkService(LabWorkDAO labWorkDAO, DBConnector dbConnector) throws SQLException {
         this.labWorkDAO = labWorkDAO;
+        ds = dbConnector.getDatasource();
         this.memoryStorage = new MemoryStorage(new Hashtable<>(labWorkDAO.selectAll()));
         monitor = memoryStorage.getMonitor();
-        connection = dbConnector.getConnection();
     }
 
     public String getWholeMap() {
@@ -32,32 +33,20 @@ public class LabWorkService {
 
     public String put(String key, LabWork lab) throws SQLException {
         synchronized (monitor) {
-            try {
-                if (memoryStorage.containsKey(key)) {
-                    throw new IllegalArgumentException("Ошибка: элемент с таким ключом уже существует, ключ = " + key);
-                }
-                Long elemId = labWorkDAO.insert(key, lab);
-                connection.commit();
-                lab.setId(elemId);
-                memoryStorage.put(key, lab);
-                return "";
-            } catch (SQLException e) {
-                connection.rollback();
-                throw e;
+            if (memoryStorage.containsKey(key)) {
+                throw new IllegalArgumentException("Ошибка: элемент с таким ключом уже существует, ключ = " + key);
             }
+            Long elemId = labWorkDAO.insert(key, lab);
+            lab.setId(elemId);
+            memoryStorage.put(key, lab);
+            return "";
         }
     }
 
     public void remove(String key) throws SQLException {
         synchronized (monitor) {
-            try {
-                labWorkDAO.delete(key);
-                connection.commit();
-                memoryStorage.remove(key);
-            } catch (SQLException e) {
-                connection.rollback();
-                throw e;
-            }
+            labWorkDAO.delete(key);
+            memoryStorage.remove(key);
         }
     }
 
@@ -69,14 +58,8 @@ public class LabWorkService {
 
     public void clearCollection(long ownerId) throws SQLException {
         synchronized (monitor) {
-            try {
-                labWorkDAO.deleteForUser(ownerId);
-                connection.commit();
-                memoryStorage.deleteForUser(ownerId);
-            } catch (SQLException e) {
-                connection.rollback();
-                throw e;
-            }
+            labWorkDAO.deleteForUser(ownerId);
+            memoryStorage.deleteForUser(ownerId);
         }
     }
 
@@ -103,56 +86,39 @@ public class LabWorkService {
 
     public void removeGreater(LabWork elem, long userId) throws SQLException {
         synchronized (monitor) {
-            try {
-                List<String> keysForRemoving = memoryStorage.keysOfGreater(elem, userId);
-
-                labWorkDAO.deleteByKeys(keysForRemoving);
-                connection.commit();
-                keysForRemoving.forEach(key -> memoryStorage.remove(key));
-            } catch (SQLException e) {
-                connection.rollback();
-                throw e;
-            }
+            List<String> keysForRemoving = memoryStorage.keysOfGreater(elem, userId);
+            labWorkDAO.deleteByKeys(keysForRemoving);
+            keysForRemoving.forEach(key -> memoryStorage.remove(key));
         }
     }
 
 
     public void replaceIfGreater(String key, LabWork newLabWork) throws SQLException {
         synchronized (monitor) {
-            long idForRestore = newLabWork.getId();
-            try {
+            try (Connection connection = ds.getConnection()) {
                 if (memoryStorage.comparing(key, newLabWork)) {
                     checkAccess(newLabWork.getOwnerId(), key);
                     newLabWork.setId(memoryStorage.getId(key));
-                    labWorkDAO.updateById(key, newLabWork);
-                    connection.commit();
+                    labWorkDAO.updateById(key, newLabWork, connection);
                     memoryStorage.put(key, newLabWork);
                 }
-            } catch (SQLException e) {
-                newLabWork.setId(idForRestore);
-                connection.rollback();
-                throw e;
             }
         }
     }
 
-    public void updateByLabWorkId(Long id, LabWork labWork, boolean needCommit) throws SQLException {
+    public void updateByLabWorkId(Long id, LabWork labWork) throws SQLException {
+        try (Connection connection = ds.getConnection()) {
+            updateByLabWorkIdWithConnection(id, labWork, connection);
+        }
+    }
+
+    public void updateByLabWorkIdWithConnection(Long id, LabWork labWork, Connection connection) throws SQLException {
         synchronized (monitor) {
-            try {
-                String key = memoryStorage.getKeyByLabWorkId(id);
-                checkAccess(labWork.getOwnerId(), key);
-                labWork.setId(id);
-                labWorkDAO.updateById(key, labWork);
-                if (needCommit){
-                    connection.commit();
-                }
-                memoryStorage.put(key, labWork);
-            } catch (SQLException e) {
-                if (needCommit) {
-                    connection.rollback();
-                }
-                throw e;
-            }
+            String key = memoryStorage.getKeyByLabWorkId(id);
+            checkAccess(labWork.getOwnerId(), key);
+            labWork.setId(id);
+            labWorkDAO.updateById(key, labWork, connection);
+            memoryStorage.put(key, labWork);
         }
     }
 

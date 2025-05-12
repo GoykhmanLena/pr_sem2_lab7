@@ -8,8 +8,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class OfferDAO {
-    private Connection connection;
+public class OfferDAO extends AbstractDAO {
     private static final String CREATE_OFFER = """
                 INSERT INTO offer (
                     labWork_id,
@@ -66,18 +65,19 @@ public class OfferDAO {
             SELECT * FROM offer
             WHERE labWork_id = ?
             """;
+
     public OfferDAO(DBConnector dbConnector, boolean dbReinit) throws SQLException {
-        connection = dbConnector.getConnection();
+        super(dbConnector.getDatasource());
         init(dbReinit);
     }
 
     private void init(boolean dbReinit) throws SQLException {
         initScheme(dbReinit);
     }
-    private void initScheme(boolean reinitDB) throws SQLException {
 
+    private void initScheme(boolean reinitDB) throws SQLException {
         String dropALL =
-                        "DROP TABLE IF EXISTS offer;\n" +
+                "DROP TABLE IF EXISTS offer;\n" +
                         "DROP SEQUENCE IF EXISTS offer_seq;";
 
         String createSequence = "CREATE SEQUENCE IF NOT EXISTS offer_seq START 1;";
@@ -88,22 +88,18 @@ public class OfferDAO {
                 "                       product_id BIGINT NOT NULL,\n" +
                 "                       status VARCHAR(256) NOT NULL\n" +
                 ");";
-
-        try (Statement stmt = connection.createStatement()) {
+        try (Connection connection = ds.getConnection(); Statement stmt = connection.createStatement()) {
             if (reinitDB) {
                 stmt.executeUpdate(dropALL);
             }
             stmt.executeUpdate(createSequence);
             stmt.executeUpdate(createTable);
-            connection.commit();
-        } catch (SQLException e){
-            connection.rollback();
-            throw e;
         }
     }
 
     public Offer insert(Offer offer) throws SQLException {
-        try (PreparedStatement pstmt = connection.prepareStatement(CREATE_OFFER)) {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(CREATE_OFFER)) {
 
             pstmt.setLong(1, offer.getLabWorkId());
             pstmt.setLong(2, offer.getProductId());
@@ -123,13 +119,11 @@ public class OfferDAO {
 
     public List<FullOffer> selectOffersByLabWorkOwner(Long userId) throws SQLException {
         List<FullOffer> userOffers = new ArrayList<>();
-
-        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFERS_BY_LAB_WORK_OWNER)){
-
+        try (Connection connection = ds.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFERS_BY_LAB_WORK_OWNER)) {
             pstmt.setLong(1, userId);
-
-            try(ResultSet resultSet = pstmt.executeQuery()){
-                while (resultSet.next()){
+            try (ResultSet resultSet = pstmt.executeQuery()) {
+                while (resultSet.next()) {
                     long offerId = resultSet.getLong(1);
                     long labWorkId = resultSet.getLong(2);
                     String labWorkName = resultSet.getString(3);
@@ -157,13 +151,13 @@ public class OfferDAO {
 
     public List<FullOffer> selectOffersByProductOwner(Long userId) throws SQLException {
         List<FullOffer> userOffers = new ArrayList<>();
-
-        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFERS_BY_PRODUCT_OWNER)){
+        try (Connection connection = ds.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFERS_BY_PRODUCT_OWNER)) {
 
             pstmt.setLong(1, userId);
 
-            try(ResultSet resultSet = pstmt.executeQuery()){
-                while (resultSet.next()){
+            try (ResultSet resultSet = pstmt.executeQuery()) {
+                while (resultSet.next()) {
                     long offerId = resultSet.getLong(1);
                     long labWorkId = resultSet.getLong(2);
                     String labWorkName = resultSet.getString(3);
@@ -190,13 +184,12 @@ public class OfferDAO {
     }
 
     public FullOffer selectOffersById(long offerId) throws SQLException {
-
-        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFER_BY_ID)){
-
+        try (Connection connection = ds.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFER_BY_ID)) {
             pstmt.setLong(1, offerId);
 
-            try(ResultSet resultSet = pstmt.executeQuery()){
-                if (resultSet.next()){
+            try (ResultSet resultSet = pstmt.executeQuery()) {
+                if (resultSet.next()) {
                     long labWorkId = resultSet.getLong(2);
                     String labWorkName = resultSet.getString(3);
                     long productId = resultSet.getLong(4);
@@ -222,31 +215,26 @@ public class OfferDAO {
         return null;
     }
 
-    public void updateOffer(Offer offerToSave) throws SQLException {
+    public void updateOffer(Offer offerToSave, Connection connection) throws SQLException {
         try (PreparedStatement pstmt = connection.prepareStatement(UPDATE_OFFER)) {
-
             pstmt.setLong(1, offerToSave.getLabWorkId());
             pstmt.setLong(2, offerToSave.getProductId());
             pstmt.setString(3, offerToSave.getStatus().name());
             pstmt.setLong(4, offerToSave.getId());
-
             pstmt.executeUpdate();
         }
     }
 
     public List<Offer> selectOffersByProductId(Long productId) throws SQLException {
         List<Offer> offers = new ArrayList<>();
-        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFERS_BY_PRODUCT_ID)){
-
+        try (Connection connection = ds.getConnection(); PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFERS_BY_PRODUCT_ID)) {
             pstmt.setLong(1, productId);
-
-            try(ResultSet resultSet = pstmt.executeQuery()){
-                while (resultSet.next()){
+            try (ResultSet resultSet = pstmt.executeQuery()) {
+                while (resultSet.next()) {
                     long id = resultSet.getLong(1);
                     long labWorkId = resultSet.getLong(2);
                     //long productId = resultSet.getLong(3);
                     String offerStatus = resultSet.getString(4);
-
                     Offer offer = new Offer(labWorkId, productId, OfferStatus.valueOf(offerStatus), id);
                     offers.add(offer);
                 }
@@ -257,12 +245,11 @@ public class OfferDAO {
 
     public List<Offer> selectOffersByLabWorkId(Long labWorkId) throws SQLException {
         List<Offer> offers = new ArrayList<>();
-        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFERS_BY_LAB_WORK_ID)){
-
+        try (Connection connection = ds.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(SELECT_OFFERS_BY_LAB_WORK_ID)) {
             pstmt.setLong(1, labWorkId);
-
-            try(ResultSet resultSet = pstmt.executeQuery()){
-                while (resultSet.next()){
+            try (ResultSet resultSet = pstmt.executeQuery()) {
+                while (resultSet.next()) {
                     long id = resultSet.getLong(1);
                     //long labWorkId = resultSet.getLong(2);
                     long productId = resultSet.getLong(3);
@@ -276,5 +263,3 @@ public class OfferDAO {
         return offers;
     }
 }
-
-

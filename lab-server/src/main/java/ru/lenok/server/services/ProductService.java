@@ -4,26 +4,22 @@ import ru.lenok.common.Product;
 import ru.lenok.server.daos.DBConnector;
 import ru.lenok.server.daos.ProductDAO;
 
-import java.sql.Connection;
+import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.List;
 
 public class ProductService {
     private final ProductDAO productDAO;
-    private final Connection connection;
-    public ProductService(ProductDAO productDAO, DBConnector dbConnector) {
+    private final DataSource ds;
+
+    public ProductService(ProductDAO productDAO, DBConnector dbConnector) throws SQLException {
         this.productDAO = productDAO;
-        connection = dbConnector.getConnection();
+        ds = dbConnector.getDatasource();
     }
 
     public void registerProduct(String productName, Long ownerId) throws SQLException {
         Product product = new Product(productName, ownerId, null);
-        try {
-            productDAO.insert(product);
-            connection.commit();
-        } catch (SQLException e){
-            connection.rollback();
-        }
+        productDAO.insert(product);
     }
 
     public List<Product> getUserProducts(Long userId) throws SQLException {

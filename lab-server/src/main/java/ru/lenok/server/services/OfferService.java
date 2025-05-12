@@ -11,6 +11,7 @@ import ru.lenok.server.daos.LabWorkDAO;
 import ru.lenok.server.daos.OfferDAO;
 import ru.lenok.server.daos.ProductDAO;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -20,30 +21,24 @@ public class OfferService {
     private final ProductDAO productDAO;
     private final OfferDAO offerDAO;
     private final LabWorkService labWorkService;
-    private final Connection connection;
+    private final DataSource ds;
 
-    public OfferService(LabWorkDAO labWorkDAO, ProductDAO productDAO, OfferDAO offerDAO, LabWorkService labWorkService, DBConnector dbConnector) {
+    public OfferService(LabWorkDAO labWorkDAO, ProductDAO productDAO, OfferDAO offerDAO, LabWorkService labWorkService, DBConnector dbConnector) throws SQLException {
         this.labWorkDAO = labWorkDAO;
         this.productDAO = productDAO;
         this.offerDAO = offerDAO;
         this.labWorkService = labWorkService;
-        connection = dbConnector.getConnection();
+        ds = dbConnector.getDatasource();
     }
 
 
     public void createOffer(long labWorkId, long productId, Long userId) throws SQLException {
         Offer offer = new Offer(labWorkId, productId, OfferStatus.OPEN, null);
         Product productFromDB = productDAO.getProductById(productId);
-        if (!productFromDB.getOwnerId().equals(userId)){
+        if (!productFromDB.getOwnerId().equals(userId)) {
             throw new IllegalArgumentException("За вами едет полиция!!! Попытка обмена на продукт, не принадлежащий вам: " + productFromDB.getName());
         }
-        try {
-            offerDAO.insert(offer);
-            connection.commit();
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
-        }
+        offerDAO.insert(offer);
     }
 
     public List<FullOffer> getIncomingOffers(Long userId) throws SQLException {
@@ -67,35 +62,38 @@ public class OfferService {
 
         LabWork labWork = labWorkService.getLabWorkById(offer.getLabWorkId());
 
-        try {
-            labWork.setOwnerId(productOwnerId);
-            labWorkService.updateByLabWorkId(labWork.getId(), labWork, false);
+        try (Connection connection = ds.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                labWork.setOwnerId(productOwnerId);
+                labWorkService.updateByLabWorkIdWithConnection(labWork.getId(), labWork, connection);
 
-            product.setOwnerId(userId);
-            productDAO.updateProduct(product);
+                product.setOwnerId(userId);
+                productDAO.updateProduct(product);
 
-            Offer offerToSave = new Offer(offer.getLabWorkId(), offer.getProductId(), OfferStatus.CLOSE, offer.getId());
-            offerDAO.updateOffer(offerToSave);
+                Offer offerToSave = new Offer(offer.getLabWorkId(), offer.getProductId(), OfferStatus.CLOSE, offer.getId());
+                offerDAO.updateOffer(offerToSave, connection);
 
-            List<Offer> offersByProductId = offerDAO.selectOffersByProductId(offer.getProductId());
-            cancelOffersExceptGiven(offerId, offersByProductId);
+                List<Offer> offersByProductId = offerDAO.selectOffersByProductId(offer.getProductId());
+                cancelOffersExceptGiven(offerId, offersByProductId, connection);
 
-            List<Offer> selectOffersByLabWorkId = offerDAO.selectOffersByLabWorkId(offer.getLabWorkId());
-            cancelOffersExceptGiven(offerId, selectOffersByLabWorkId);
+                List<Offer> selectOffersByLabWorkId = offerDAO.selectOffersByLabWorkId(offer.getLabWorkId());
+                cancelOffersExceptGiven(offerId, selectOffersByLabWorkId, connection);
 
-            connection.commit();
-        } catch (SQLException e) {
-            connection.rollback();
-            labWork.setOwnerId(userId);
-            throw e;
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                labWork.setOwnerId(userId);
+                throw e;
+            }
         }
     }
 
-    private void cancelOffersExceptGiven(long offerId, List<Offer> offers) throws SQLException {
+    private void cancelOffersExceptGiven(long offerId, List<Offer> offers, Connection connection) throws SQLException {
         for (Offer o : offers) {
             if (!o.getId().equals(offerId)) {
                 o.setStatus(OfferStatus.CANCEL);
-                offerDAO.updateOffer(o);
+                offerDAO.updateOffer(o, connection);
             }
         }
     }

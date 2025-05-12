@@ -5,28 +5,22 @@ import ru.lenok.server.daos.DBConnector;
 import ru.lenok.server.daos.UserDAO;
 import ru.lenok.server.utils.PasswordHasher;
 
+import javax.sql.DataSource;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Connection;
 import java.sql.SQLException;
 
 public class UserService {
     private final UserDAO userDAO;
-    private final Connection connection;
+    private final DataSource ds;
 
-    public UserService(UserDAO userDAO, DBConnector dbConnector) {
+    public UserService(UserDAO userDAO, DBConnector dbConnector) throws SQLException {
+        ds = dbConnector.getDatasource();
         this.userDAO = userDAO;
-        connection = dbConnector.getConnection();
     }
 
     public User register(User user) throws SQLException, NoSuchAlgorithmException {
-        try {
-            User userFromDB = userDAO.insert(user);
-            connection.commit();
-            return userFromDB;
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
-        }
+        User userFromDB = userDAO.insert(user);
+        return userFromDB;
     }
 
     public User login(User user) throws SQLException, IllegalArgumentException, NoSuchAlgorithmException {

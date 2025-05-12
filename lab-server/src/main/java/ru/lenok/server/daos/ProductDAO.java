@@ -7,8 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class ProductDAO {
-    private Connection connection;
+public class ProductDAO extends AbstractDAO {
     private static final String CREATE_PRODUCT = """
                 INSERT INTO product (
                     name,
@@ -30,7 +29,7 @@ public class ProductDAO {
             """;
 
     public ProductDAO(Set<Long> userIds, DBConnector dbConnector, boolean dbReinit) throws SQLException {
-        connection = dbConnector.getConnection();
+        super(dbConnector.getDatasource());
         init(userIds, dbReinit);
     }
 
@@ -42,7 +41,6 @@ public class ProductDAO {
     }
 
     private void initScheme(boolean reinitDB) throws SQLException {
-
         String dropALL =
                 "DROP INDEX IF EXISTS idx_product_name;\n" +
                         "DROP TABLE IF EXISTS product;\n" +
@@ -56,37 +54,26 @@ public class ProductDAO {
                 "                       owner_id BIGINT NOT NULL\n" +
                 ");";
         String createIndexName = "CREATE INDEX IF NOT EXISTS idx_product_name ON product (name);";
-
-        try (Statement stmt = connection.createStatement()) {
+        try (Connection connection = ds.getConnection(); Statement stmt = connection.createStatement()) {
             if (reinitDB) {
                 stmt.executeUpdate(dropALL);
             }
             stmt.executeUpdate(createSequence);
             stmt.executeUpdate(createTable);
             stmt.executeUpdate(createIndexName);
-            connection.commit();
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
         }
     }
 
     private void persistInitialState(Set<Long> userIds) throws SQLException {
-        try {
-            for (Long userId : userIds) {
-                Product product = new Product("flat " + userId, userId, null);
-                insert(product);
-            }
-            connection.commit();
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
+        for (Long userId : userIds) {
+            Product product = new Product("flat " + userId, userId, null);
+            insert(product);
         }
     }
 
     public Product insert(Product product) throws SQLException {
-        try (PreparedStatement pstmt = connection.prepareStatement(CREATE_PRODUCT)) {
-
+        try (Connection connection = ds.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(CREATE_PRODUCT)) {
             pstmt.setString(1, product.getName());
             pstmt.setLong(2, product.getOwnerId());
 
@@ -104,9 +91,8 @@ public class ProductDAO {
 
     public List<Product> getUserProducts(Long userId) throws SQLException {
         List<Product> userProducts = new ArrayList<>();
-
-        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_OWNER)) {
-
+        try (Connection connection = ds.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_OWNER)) {
             pstmt.setLong(1, userId);
 
             try (ResultSet resultSet = pstmt.executeQuery()) {
@@ -124,11 +110,9 @@ public class ProductDAO {
     }
 
     public Product getProductById(Long productId) throws SQLException {
-
-        try (PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_ID)) {
-
+        try (Connection connection = ds.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(SELECT_PRODUCTS_BY_ID)) {
             pstmt.setLong(1, productId);
-
             try (ResultSet resultSet = pstmt.executeQuery()) {
                 if (resultSet.next()) {
                     String productName = resultSet.getString(2);
@@ -143,12 +127,12 @@ public class ProductDAO {
     }
 
     public void updateProduct(Product product) throws SQLException {
-        try (PreparedStatement pstmt = connection.prepareStatement(UPDATE_PRODUCT)) {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement pstmt = connection.prepareStatement(UPDATE_PRODUCT)) {
 
             pstmt.setLong(1, product.getOwnerId());
             pstmt.setString(2, product.getName());
             pstmt.setLong(3, product.getId());
-
             pstmt.executeUpdate();
         }
     }
