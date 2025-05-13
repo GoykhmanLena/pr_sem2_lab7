@@ -69,7 +69,7 @@ public class OfferService {
                 labWorkService.updateByLabWorkIdWithConnection(labWork.getId(), labWork, connection);
 
                 product.setOwnerId(userId);
-                productDAO.updateProduct(product);
+                productDAO.updateProduct(product, connection);
 
                 Offer offerToSave = new Offer(offer.getLabWorkId(), offer.getProductId(), OfferStatus.CLOSE, offer.getId());
                 offerDAO.updateOffer(offerToSave, connection);

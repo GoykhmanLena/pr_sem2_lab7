@@ -95,10 +95,8 @@ public class ProductDAO extends AbstractDAO {
         return null;
     }
 
-    public void updateProduct(Product product) throws SQLException {
-        try (Connection connection = ds.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(UPDATE_PRODUCT.t())) {
-
+    public void updateProduct(Product product, Connection connection) throws SQLException {
+        try (PreparedStatement pstmt = connection.prepareStatement(UPDATE_PRODUCT.t())) {
             pstmt.setLong(1, product.getOwnerId());
             pstmt.setString(2, product.getName());
             pstmt.setLong(3, product.getId());

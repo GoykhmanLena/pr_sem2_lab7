@@ -32,5 +32,7 @@
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="ERROR_CONSOLE" />
     </root>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="ru.lenok" level="INFO"/>
 
 </configuration>
