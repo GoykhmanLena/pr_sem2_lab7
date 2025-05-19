@@ -30,6 +30,7 @@ public class UserDAO extends AbstractDAO {
     private void initScheme(boolean reinitDB) throws SQLException {
         try (Connection connection = ds.getConnection(); Statement stmt = connection.createStatement()) {
             if (reinitDB) {
+                stmt.executeUpdate(DROP_ALL_OFFER.t());
                 stmt.executeUpdate(DROP_ALL_LABWORK.t());
                 stmt.executeUpdate(DROP_ALL_USERS.t());
             }

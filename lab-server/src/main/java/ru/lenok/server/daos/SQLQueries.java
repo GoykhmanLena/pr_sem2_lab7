@@ -165,13 +165,16 @@ public enum SQLQueries {
         CREATE SEQUENCE IF NOT EXISTS offer_seq START 1;
         """),
     CREATE_TABLE_OFFER("""
-        CREATE TABLE IF NOT EXISTS offer (
-            id BIGINT DEFAULT nextval('offer_seq') PRIMARY KEY,
-            labWork_id BIGINT NOT NULL,
-            product_id BIGINT NOT NULL,
-            status VARCHAR(256) NOT NULL
-        )
-        """),
+            CREATE TABLE IF NOT EXISTS offer (
+                id BIGINT DEFAULT nextval('offer_seq') PRIMARY KEY,
+                labWork_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                status VARCHAR(256) NOT NULL,
+                CONSTRAINT fk_labwork FOREIGN KEY (labWork_id) REFERENCES lab_work(id),
+                CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES product(id)
+            )
+            """),
+
     CREATE_OFFER("""
                 INSERT INTO offer (
                     labWork_id,
