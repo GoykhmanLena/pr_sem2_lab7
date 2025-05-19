@@ -34,6 +34,9 @@ public class OfferService {
     public void createOffer(long labWorkId, long productId, Long userId) throws SQLException {
         Offer offer = new Offer(labWorkId, productId, OfferStatus.OPEN, null);
         Product productFromDB = productDAO.getProductById(productId);
+        if (productFromDB == null){
+            throw new IllegalArgumentException("Продукта с таким id не существует, проверьте еще раз");
+        }
         if (!productFromDB.getOwnerId().equals(userId)){
             throw new IllegalArgumentException("За вами едет полиция!!! Попытка обмена на продукт, не принадлежащий вам: " + productFromDB.getName());
         }

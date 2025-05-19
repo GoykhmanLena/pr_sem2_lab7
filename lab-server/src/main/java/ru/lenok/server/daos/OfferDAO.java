@@ -83,11 +83,15 @@ public class OfferDAO {
         String createSequence = "CREATE SEQUENCE IF NOT EXISTS offer_seq START 1;";
 
         String createTable = "CREATE TABLE IF NOT EXISTS offer (\n" +
-                "                       id BIGINT DEFAULT nextval('offer_seq') PRIMARY KEY,\n" +
-                "                       labWork_id BIGINT NOT NULL,\n" +
-                "                       product_id BIGINT NOT NULL,\n" +
-                "                       status VARCHAR(256) NOT NULL\n" +
+                "    id BIGINT DEFAULT nextval('offer_seq') PRIMARY KEY,\n" +
+                "    labWork_id BIGINT NOT NULL,\n" +
+                "    product_id BIGINT NOT NULL,\n" +
+                "    status VARCHAR(256) NOT NULL,\n" +
+                "    CONSTRAINT fk_labwork FOREIGN KEY (labWork_id) REFERENCES lab_work(id),\n" +
+                "    CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES product(id)\n" +
                 ");";
+
+
 
         try (Statement stmt = connection.createStatement()) {
             if (reinitDB) {
