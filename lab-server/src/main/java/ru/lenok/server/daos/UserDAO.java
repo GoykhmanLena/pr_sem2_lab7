@@ -44,6 +44,9 @@ public class UserDAO {
     }
 
     private void initScheme(boolean reinitDB) throws SQLException {
+        String dropALLOffer =
+                "DROP TABLE IF EXISTS offer;\n" +
+                        "DROP SEQUENCE IF EXISTS offer_seq;";
         String dropAllLabWork =
                 "DROP INDEX IF EXISTS idx_labwork_name;\n" +
                         "DROP INDEX IF EXISTS idx_labwork_unique_key;\n" +
@@ -66,6 +69,7 @@ public class UserDAO {
 
         try (Statement stmt = connection.createStatement()) {
             if (reinitDB) {
+                stmt.executeUpdate(dropALLOffer);
                 stmt.executeUpdate(dropAllLabWork);
                 stmt.executeUpdate(dropALL);
             }
